@@ -52,66 +52,69 @@ namespace gazebo_ros_control
   bool PalHardwareGazebo::parseForceTorqueSensors(ros::NodeHandle &nh,
                                                   gazebo::physics::ModelPtr model,
                                                   const urdf::Model* const urdf_model){
-      using std::vector;
-      using std::string;
+    using std::vector;
+    using std::string;
 
-      const string ft_ns = "force_torque";
-      vector<string> ft_ids = getIds(nh, ft_ns);
-      ros::NodeHandle ft_nh(nh, ft_ns);
-      typedef vector<string>::const_iterator Iterator;
-      for (Iterator it = ft_ids.begin(); it != ft_ids.end(); ++it){
-          std::string sensor_name = *it;
-          std::string sensor_joint_name;
-          std::string sensor_frame_id;
-          ros::NodeHandle ft_sensor_nh(ft_nh, sensor_name);
-          xh::fetchParam(ft_sensor_nh, "frame", sensor_frame_id);
-          xh::fetchParam(ft_sensor_nh, "sensor_joint", sensor_joint_name);
-          ForceTorqueSensorDefinitionPtr ft(new ForceTorqueSensorDefinition(sensor_name,
-                                                                            sensor_joint_name,
-                                                                            sensor_frame_id));
+    const string ft_ns = "force_torque";
+    vector<string> ft_ids = getIds(nh, ft_ns);
+    ros::NodeHandle ft_nh(nh, ft_ns);
+    typedef vector<string>::const_iterator Iterator;
+    for (Iterator it = ft_ids.begin(); it != ft_ids.end(); ++it){
+      std::string sensor_name = *it;
+      std::string sensor_joint_name;
+      std::string sensor_frame_id;
+      ros::NodeHandle ft_sensor_nh(ft_nh, sensor_name);
+      xh::fetchParam(ft_sensor_nh, "frame", sensor_frame_id);
+      xh::fetchParam(ft_sensor_nh, "sensor_joint", sensor_joint_name);
+      ForceTorqueSensorDefinitionPtr ft(new ForceTorqueSensorDefinition(sensor_name,
+                                                                        sensor_joint_name,
+                                                                        sensor_frame_id));
 
-          ft->gazebo_joint  = model->GetJoint(ft->sensorJointName);
-          if (!ft->gazebo_joint){
-            ROS_ERROR_STREAM("Could not find joint '" << ft->sensorJointName << "' to which a force-torque sensor is attached.");
-            return false;
-          }
+      ft->gazebo_joint  = model->GetJoint(ft->sensorJointName);
 
-          forceTorqueSensorDefinitions_.push_back(ft);
-          ROS_INFO_STREAM("Parsed fake FT sensor: "<<sensor_name<<" in frame: "<<sensor_frame_id);
+      // Get sensor parent transform
+
+      if (!ft->gazebo_joint){
+        ROS_ERROR_STREAM("Could not find joint '" << ft->sensorJointName << "' to which a force-torque sensor is attached.");
+        return false;
       }
-      return true;
+
+      forceTorqueSensorDefinitions_.push_back(ft);
+      ROS_INFO_STREAM("Parsed fake FT sensor: "<<sensor_name<<" in frame: "<<sensor_frame_id);
+    }
+    return true;
   }
 
   bool PalHardwareGazebo::parseIMUSensors(ros::NodeHandle &nh,
                                           gazebo::physics::ModelPtr model,
                                           const urdf::Model* const urdf_model){
-      using std::vector;
-      using std::string;
+    using std::vector;
+    using std::string;
 
-      const string imu_ns = "imu";
-      vector<string> imu_ids = getIds(nh, imu_ns);
-      ros::NodeHandle imu_nh(nh, imu_ns);
-      typedef vector<string>::const_iterator Iterator;
-      for (Iterator it = imu_ids.begin(); it != imu_ids.end(); ++it){
-          std::string sensor_name = *it;
-          std::string sensor_frame_id;
-          ros::NodeHandle imu_sensor_nh(imu_nh, sensor_name);
-          xh::fetchParam(imu_sensor_nh, "frame", sensor_frame_id);
+    const string imu_ns = "imu";
+    vector<string> imu_ids = getIds(nh, imu_ns);
+    ros::NodeHandle imu_nh(nh, imu_ns);
+    typedef vector<string>::const_iterator Iterator;
+    for (Iterator it = imu_ids.begin(); it != imu_ids.end(); ++it){
+      std::string sensor_name = *it;
+      std::string sensor_frame_id;
+      ros::NodeHandle imu_sensor_nh(imu_nh, sensor_name);
+      xh::fetchParam(imu_sensor_nh, "frame", sensor_frame_id);
 
-          boost::shared_ptr<gazebo::sensors::ImuSensor> imu_sensor;
-          imu_sensor =  boost::dynamic_pointer_cast<gazebo::sensors::ImuSensor>
-              (gazebo::sensors::SensorManager::Instance()->GetSensor("imu_sensor"));
-          if (!imu_sensor){
-            ROS_ERROR_STREAM("Could not find base IMU sensor.");
-            return false;
-          }
-
-          ImuSensorDefinitionPtr imu(new ImuSensorDefinition(sensor_name, sensor_frame_id));
-          imu->gazebo_imu_sensor = imu_sensor;
-          imuSensorDefinitions_.push_back(imu);
-          ROS_INFO_STREAM("Parsed imu sensor: "<<sensor_name<<" in frame: "<<sensor_frame_id);
+      boost::shared_ptr<gazebo::sensors::ImuSensor> imu_sensor;
+      imu_sensor =  boost::dynamic_pointer_cast<gazebo::sensors::ImuSensor>
+          (gazebo::sensors::SensorManager::Instance()->GetSensor("imu_sensor"));
+      if (!imu_sensor){
+        ROS_ERROR_STREAM("Could not find base IMU sensor.");
+        return false;
       }
-      return true;
+
+      ImuSensorDefinitionPtr imu(new ImuSensorDefinition(sensor_name, sensor_frame_id));
+      imu->gazebo_imu_sensor = imu_sensor;
+      imuSensorDefinitions_.push_back(imu);
+      ROS_INFO_STREAM("Parsed imu sensor: "<<sensor_name<<" in frame: "<<sensor_frame_id);
+    }
+    return true;
   }
 
   PalHardwareGazebo::PalHardwareGazebo()
@@ -218,7 +221,7 @@ namespace gazebo_ros_control
       ft_sensor_interface_.registerHandle(ForceTorqueSensorHandle(ft->sensorName,
                                                                   ft->sensorFrame,
                                                                   &ft->force[0],
-                                                                  &ft->torque[0]));
+                                          &ft->torque[0]));
     }
 
     registerInterface(&ft_sensor_interface_);
@@ -261,6 +264,8 @@ namespace gazebo_ros_control
       ft->torque[0] = ft_wrench.body2Torque.x;
       ft->torque[1] = ft_wrench.body2Torque.y;
       ft->torque[2] =  ft_wrench.body2Torque.z;
+     // std::cerr<<"Reading ft sensor: "<<ft->sensorName<<" values: "<<ft->force[0]<<" "<<ft->force[1]<<" "<<ft->force[2]
+     //         <<" - "<<ft->torque[0]<<" "<<ft->torque[1]<<" "<<ft->torque[2]<<std::endl;
     }
 
     // Read IMU sensor
