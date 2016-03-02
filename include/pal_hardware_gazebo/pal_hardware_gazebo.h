@@ -20,6 +20,8 @@
 
 #include <gazebo_ros_control/default_robot_hw_sim.h>
 
+#include <pal_robot_tools/math_utils.h>
+
 namespace gazebo_ros_control
 {
 
@@ -31,6 +33,8 @@ namespace gazebo_ros_control
       std::string sensorFrame;
       double force[3];
       double torque[3];
+      eMatrixHom sensorTransform;
+
       ForceTorqueSensorDefinition(const std::string &name,
                                   const std::string &sensor_joint_name,
                                   const std::string &frame){

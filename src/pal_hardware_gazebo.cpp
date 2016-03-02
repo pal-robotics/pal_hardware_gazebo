@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// Copyright (C) 2013, PAL Robotics S.L.
+// Copyright (C) 2016, PAL Robotics S.L.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -40,6 +40,8 @@
 #include <pal_hardware_gazebo/pal_hardware_gazebo.h>
 #include <dynamic_introspection/DynamicIntrospection.h>
 #include <pal_robot_tools/xmlrpc_helpers.h>
+#include <pal_robot_tools/conversions.h>
+#include <pal_robot_tools/math_utils.h>
 
 using std::vector;
 using std::string;
@@ -73,6 +75,19 @@ namespace gazebo_ros_control
       ft->gazebo_joint  = model->GetJoint(ft->sensorJointName);
 
       // Get sensor parent transform
+      boost::shared_ptr<const urdf::Link> urdf_sensor_link;
+      urdf_sensor_link = urdf_model->getLink(ft->sensorFrame);
+      if(!urdf_sensor_link){
+        ROS_ERROR_STREAM("Problem finding link: "<<ft->sensorFrame<<" to attach FT sensor in robot model");
+        return false;
+      }
+      urdf::Pose tf_urdf = urdf_sensor_link->parent_joint->parent_to_joint_origin_transform;
+      eMatrixHom tf_eigen;
+      pal::convert(tf_urdf, tf_eigen);
+      ft->sensorTransform = tf_eigen;
+      std::cerr<<"Sensor transform: "<<std::endl<<tf_eigen.matrix()<<std::endl;
+
+      std::cerr<<"Parsed Transform: "<<ft->sensorName<<std::endl<<ft->sensorTransform.matrix()<<std::endl;
 
       if (!ft->gazebo_joint){
         ROS_ERROR_STREAM("Could not find joint '" << ft->sensorJointName << "' to which a force-torque sensor is attached.");
@@ -258,14 +273,41 @@ namespace gazebo_ros_control
     for(size_t i = 0; i < forceTorqueSensorDefinitions_.size(); ++i){
       ForceTorqueSensorDefinitionPtr &ft = forceTorqueSensorDefinitions_[i];
       gazebo::physics::JointWrench ft_wrench = ft->gazebo_joint->GetForceTorque(0u);
-      ft->force[0]  = ft_wrench.body2Force.x;
-      ft->force[1]  = ft_wrench.body2Force.y;
-      ft->force[2]  =  ft_wrench.body2Force.z;
-      ft->torque[0] = ft_wrench.body2Torque.x;
-      ft->torque[1] = ft_wrench.body2Torque.y;
-      ft->torque[2] =  ft_wrench.body2Torque.z;
-     // std::cerr<<"Reading ft sensor: "<<ft->sensorName<<" values: "<<ft->force[0]<<" "<<ft->force[1]<<" "<<ft->force[2]
-     //         <<" - "<<ft->torque[0]<<" "<<ft->torque[1]<<" "<<ft->torque[2]<<std::endl;
+      //std::cerr<<ft->gazebo_joint->GetName()<<std::endl;
+      ft->force[0]  = ft_wrench.body1Force.x;
+      ft->force[1]  = ft_wrench.body1Force.y;
+      ft->force[2]  =  ft_wrench.body1Force.z;
+      ft->torque[0] = ft_wrench.body1Torque.x;
+      ft->torque[1] = ft_wrench.body1Torque.y;
+      ft->torque[2] =  ft_wrench.body1Torque.z;
+
+//      std::cerr<<"RAW ft sensor: "<<ft->sensorName<<" values: "<<ft->force[0]<<" "<<ft->force[1]<<" "<<ft->force[2]
+//              <<" - "<<ft->torque[0]<<" "<<ft->torque[1]<<" "<<ft->torque[2]<<std::endl;
+
+      // Transform to sensor frame
+      Eigen::MatrixXd transform(6, 6);
+      transform.setZero();
+      transform.block(0, 0, 3, 3) = Eigen::Matrix3d::Identity();//ft->sensorTransform.rotation().transpose();
+      transform.block(3, 3, 3, 3) = ft->sensorTransform.rotation().transpose();
+      eVector3 r = ft->sensorTransform.translation();
+      transform.block(3, 0, 3, 3) = skew(r)*ft->sensorTransform.rotation().transpose();
+
+      Eigen::VectorXd wrench(6);
+      wrench<<ft->torque[0], ft->torque[1], ft->torque[2],
+              ft->force[0], ft->force[1], ft->force[2];
+      Eigen::VectorXd transformedWrench(6);
+
+      transformedWrench = transform*wrench;
+
+      ft->torque[0] = transformedWrench(0);
+      ft->torque[1] = transformedWrench(1);
+      ft->torque[2] = transformedWrench(2);
+      ft->force[0]  = transformedWrench(3);
+      ft->force[1]  = transformedWrench(4);
+      ft->force[2]  = transformedWrench(5);
+
+//       std::cerr<<"Transformed ft sensor: "<<ft->sensorName<<" values: "<<ft->force[0]<<" "<<ft->force[1]<<" "<<ft->force[2]
+//               <<" - "<<ft->torque[0]<<" "<<ft->torque[1]<<" "<<ft->torque[2]<<std::endl;
     }
 
     // Read IMU sensor
