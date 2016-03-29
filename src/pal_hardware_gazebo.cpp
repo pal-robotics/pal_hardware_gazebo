@@ -76,18 +76,49 @@ namespace gazebo_ros_control
 
       // Get sensor parent transform
       boost::shared_ptr<const urdf::Link> urdf_sensor_link;
+      boost::shared_ptr<const urdf::Joint> urdf_sensor_joint;
       urdf_sensor_link = urdf_model->getLink(ft->sensorFrame);
+      urdf_sensor_joint = urdf_model->getJoint(sensor_joint_name);
+
       if(!urdf_sensor_link){
         ROS_ERROR_STREAM("Problem finding link: "<<ft->sensorFrame<<" to attach FT sensor in robot model");
         return false;
       }
-      urdf::Pose tf_urdf = urdf_sensor_link->parent_joint->parent_to_joint_origin_transform;
-      eMatrixHom tf_eigen;
-      pal::convert(tf_urdf, tf_eigen);
-      ft->sensorTransform = tf_eigen;
-      std::cerr<<"Sensor transform: "<<std::endl<<tf_eigen.matrix()<<std::endl;
 
-      std::cerr<<"Parsed Transform: "<<ft->sensorName<<std::endl<<ft->sensorTransform.matrix()<<std::endl;
+      if(!urdf_sensor_joint){
+        ROS_ERROR_STREAM("Problem finding joint: "<<ft->sensorJointName<<" to attach FT sensor in robot model");
+        return false;
+      }
+
+      // Recursively follow the transform until the parent
+      bool parentFount = 0;
+      eMatrixHom sensorTransform;
+      sensorTransform.setIdentity();
+
+      std::cerr<<"Tree path for sensor:"<<std::endl;
+      while(!parentFount){
+       std::cerr<<"      "<<urdf_sensor_link->name<<std::endl;
+
+       urdf::Pose tf_urdf = urdf_sensor_link->parent_joint->parent_to_joint_origin_transform;
+       eMatrixHom tf_eigen;
+       pal::convert(tf_urdf, tf_eigen);
+       sensorTransform = tf_eigen*sensorTransform;
+
+       urdf_sensor_link = urdf_sensor_link->getParent();
+
+       if(urdf_sensor_joint->child_link_name == urdf_sensor_link->name){
+         parentFount = true;
+       }
+       else{
+       //  urdf_sensor_link = urdf_sensor_link->getParent();
+       }
+
+      }
+
+      std::cerr<<"Sensor name: "<<sensor_name<<"transform: "<<std::endl<<sensorTransform.matrix()<<std::endl;
+      std::cerr<<"Sensor name: "<<sensor_name<<"transform transpose: "<<std::endl<<sensorTransform.matrix().transpose()<<std::endl;
+
+      ft->sensorTransform = sensorTransform;
 
       if (!ft->gazebo_joint){
         ROS_ERROR_STREAM("Could not find joint '" << ft->sensorJointName << "' to which a force-torque sensor is attached.");
@@ -274,12 +305,12 @@ namespace gazebo_ros_control
       ForceTorqueSensorDefinitionPtr &ft = forceTorqueSensorDefinitions_[i];
       gazebo::physics::JointWrench ft_wrench = ft->gazebo_joint->GetForceTorque(0u);
       //std::cerr<<ft->gazebo_joint->GetName()<<std::endl;
-      ft->force[0]  = ft_wrench.body1Force.x;
-      ft->force[1]  = ft_wrench.body1Force.y;
-      ft->force[2]  =  ft_wrench.body1Force.z;
-      ft->torque[0] = ft_wrench.body1Torque.x;
-      ft->torque[1] = ft_wrench.body1Torque.y;
-      ft->torque[2] =  ft_wrench.body1Torque.z;
+      ft->force[0]  = ft_wrench.body2Force.x;
+      ft->force[1]  = ft_wrench.body2Force.y;
+      ft->force[2]  = ft_wrench.body2Force.z;
+      ft->torque[0] = ft_wrench.body2Torque.x;
+      ft->torque[1] = ft_wrench.body2Torque.y;
+      ft->torque[2] =  ft_wrench.body2Torque.z;
 
 //      std::cerr<<"RAW ft sensor: "<<ft->sensorName<<" values: "<<ft->force[0]<<" "<<ft->force[1]<<" "<<ft->force[2]
 //              <<" - "<<ft->torque[0]<<" "<<ft->torque[1]<<" "<<ft->torque[2]<<std::endl;
@@ -287,7 +318,8 @@ namespace gazebo_ros_control
       // Transform to sensor frame
       Eigen::MatrixXd transform(6, 6);
       transform.setZero();
-      transform.block(0, 0, 3, 3) = Eigen::Matrix3d::Identity();//ft->sensorTransform.rotation().transpose();
+      transform.block(0, 0, 3, 3) = Eigen::Matrix3d::Identity();
+      //transform.block(0, 0, 3, 3) = ft->sensorTransform.rotation().transpose(); //Eigen::Matrix3d::Identity();//ft->sensorTransform.rotation().transpose();
       transform.block(3, 3, 3, 3) = ft->sensorTransform.rotation().transpose();
       eVector3 r = ft->sensorTransform.translation();
       transform.block(3, 0, 3, 3) = skew(r)*ft->sensorTransform.rotation().transpose();
