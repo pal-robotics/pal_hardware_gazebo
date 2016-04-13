@@ -68,6 +68,7 @@ namespace gazebo_ros_control
       ros::NodeHandle ft_sensor_nh(ft_nh, sensor_name);
       xh::fetchParam(ft_sensor_nh, "frame", sensor_frame_id);
       xh::fetchParam(ft_sensor_nh, "sensor_joint", sensor_joint_name);
+
       ForceTorqueSensorDefinitionPtr ft(new ForceTorqueSensorDefinition(sensor_name,
                                                                         sensor_joint_name,
                                                                         sensor_frame_id));
@@ -95,7 +96,6 @@ namespace gazebo_ros_control
       eMatrixHom sensorTransform;
       sensorTransform.setIdentity();
 
-      std::cerr<<"Tree path for sensor:"<<std::endl;
       while(!parentFount){
        std::cerr<<"      "<<urdf_sensor_link->name<<std::endl;
 
@@ -115,8 +115,8 @@ namespace gazebo_ros_control
 
       }
 
-      std::cerr<<"Sensor name: "<<sensor_name<<"transform: "<<std::endl<<sensorTransform.matrix()<<std::endl;
-      std::cerr<<"Sensor name: "<<sensor_name<<"transform transpose: "<<std::endl<<sensorTransform.matrix().transpose()<<std::endl;
+      //std::cerr<<"Sensor name: "<<sensor_name<<"transform: "<<std::endl<<sensorTransform.matrix()<<std::endl;
+      //std::cerr<<"Sensor name: "<<sensor_name<<"transform transpose: "<<std::endl<<sensorTransform.matrix().transpose()<<std::endl;
 
       ft->sensorTransform = sensorTransform;
 
@@ -274,6 +274,8 @@ namespace gazebo_ros_control
     ROS_DEBUG_STREAM("Registered force-torque sensors.");
 
     // Hardware interfaces: Base IMU sensors
+    parseIMUSensors(nh, model, urdf_model);
+
     for(size_t i=0; i<imuSensorDefinitions_.size(); ++i){
       ImuSensorDefinitionPtr &imu = imuSensorDefinitions_[i];
 
@@ -304,7 +306,7 @@ namespace gazebo_ros_control
     for(size_t i = 0; i < forceTorqueSensorDefinitions_.size(); ++i){
       ForceTorqueSensorDefinitionPtr &ft = forceTorqueSensorDefinitions_[i];
       gazebo::physics::JointWrench ft_wrench = ft->gazebo_joint->GetForceTorque(0u);
-      //std::cerr<<ft->gazebo_joint->GetName()<<std::endl;
+
       ft->force[0]  = ft_wrench.body2Force.x;
       ft->force[1]  = ft_wrench.body2Force.y;
       ft->force[2]  = ft_wrench.body2Force.z;
@@ -312,14 +314,10 @@ namespace gazebo_ros_control
       ft->torque[1] = ft_wrench.body2Torque.y;
       ft->torque[2] =  ft_wrench.body2Torque.z;
 
-//      std::cerr<<"RAW ft sensor: "<<ft->sensorName<<" values: "<<ft->force[0]<<" "<<ft->force[1]<<" "<<ft->force[2]
-//              <<" - "<<ft->torque[0]<<" "<<ft->torque[1]<<" "<<ft->torque[2]<<std::endl;
-
       // Transform to sensor frame
       Eigen::MatrixXd transform(6, 6);
       transform.setZero();
       transform.block(0, 0, 3, 3) = Eigen::Matrix3d::Identity();
-      //transform.block(0, 0, 3, 3) = ft->sensorTransform.rotation().transpose(); //Eigen::Matrix3d::Identity();//ft->sensorTransform.rotation().transpose();
       transform.block(3, 3, 3, 3) = ft->sensorTransform.rotation().transpose();
       eVector3 r = ft->sensorTransform.translation();
       transform.block(3, 0, 3, 3) = skew(r)*ft->sensorTransform.rotation().transpose();
@@ -337,9 +335,6 @@ namespace gazebo_ros_control
       ft->force[0]  = transformedWrench(3);
       ft->force[1]  = transformedWrench(4);
       ft->force[2]  = transformedWrench(5);
-
-//       std::cerr<<"Transformed ft sensor: "<<ft->sensorName<<" values: "<<ft->force[0]<<" "<<ft->force[1]<<" "<<ft->force[2]
-//               <<" - "<<ft->torque[0]<<" "<<ft->torque[1]<<" "<<ft->torque[2]<<std::endl;
     }
 
     // Read IMU sensor
@@ -362,7 +357,6 @@ namespace gazebo_ros_control
       imu->linear_acceleration[1] =  imu_lin_acc.y;
       imu->linear_acceleration[2] =  imu_lin_acc.z;
     }
-
 
   }
 
