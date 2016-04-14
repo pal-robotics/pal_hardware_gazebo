@@ -19,8 +19,6 @@
 
 #include <gazebo_ros_control/default_robot_hw_sim.h>
 
-#include <pal_robot_tools/math_utils.h>
-
 namespace gazebo_ros_control
 {
 

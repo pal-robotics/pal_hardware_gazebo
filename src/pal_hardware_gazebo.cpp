@@ -38,9 +38,7 @@
 #include <transmission_interface/transmission_interface_loader.h>
 
 #include <pal_hardware_gazebo/pal_hardware_gazebo.h>
-#include <pal_robot_tools/xmlrpc_helpers.h>
 #include <pal_robot_tools/conversions.h>
-#include <pal_robot_tools/math_utils.h>
 
 using std::vector;
 using std::string;
