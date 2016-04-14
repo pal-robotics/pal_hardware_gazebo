@@ -1,32 +1,23 @@
 <?xml version="1.0"?>
-<package>
+<package format="2">
   <name>pal_hardware_gazebo</name>
   <version>0.0.2</version>
   <description>The pal_hardware_gazebo package</description>
 
-  <maintainer email="hilario@todo.todo">hilario</maintainer>
+  <maintainer email="hilario.tome@pal-robotics.com">Hilario Tome</maintainer>
 
-  <license>TODO</license>
+  <license>BSD</license>
 
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>angles</build_depend>
-  <build_depend>hardware_interface</build_depend>
-  <build_depend>joint_limits_interface</build_depend>
-  <build_depend>gazebo_ros_control</build_depend>
-  <build_depend>pal_ros_control</build_depend>
-  <build_depend>gazebo</build_depend>
-  <build_depend>dynamic_introspection</build_depend>
-  <build_depend>pal_robot_tools</build_depend>
 
-  <run_depend>roscpp</run_depend>
-  <run_depend>hardware_interface</run_depend>
-  <run_depend>joint_limits_interface</run_depend>
-  <run_depend>gazebo_ros_control</run_depend>
-  <run_depend>pal_ros_control</run_depend>
-  <run_depend>gazebo</run_depend>
-  <run_depend>dynamic_introspection</run_depend>
-  <run_depend>pal_robot_tools</run_depend>
+  <build_depend>angles</build_depend>
+  
+  <depend>roscpp</depend>
+  <depend>hardware_interface</depend>
+  <depend>joint_limits_interface</depend>
+  <depend>gazebo_ros_control</depend>
+  <depend>gazebo</depend>
+  <depend>pal_robot_tools</depend>
 
   <export>
     <gazebo_ros_control plugin="${prefix}/pal_hardware_gazebo_plugins.xml"/>
