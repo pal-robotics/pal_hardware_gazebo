@@ -2,8 +2,8 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.3 (2016-05-06)
+------------------
 * Add explicitly eigen dependency
 * Pulled necessary functions from pal_robot_tools to here to remove dependecy tree
 * Removed unused dependencies
