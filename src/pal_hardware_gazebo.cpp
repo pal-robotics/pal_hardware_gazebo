@@ -33,15 +33,100 @@
 #include <urdf_parser/urdf_parser.h>
 #include <pluginlib/class_list_macros.h>
 #include <angles/angles.h>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 #include <joint_limits_interface/joint_limits_urdf.h>
 #include <transmission_interface/transmission_interface_loader.h>
 
 #include <pal_hardware_gazebo/pal_hardware_gazebo.h>
-#include <pal_robot_tools/conversions.h>
+
+typedef Eigen::Vector3d   eVector3;
+typedef Eigen::Isometry3d eMatrixHom;
+typedef Eigen::Matrix3d   eMatrixRot;
 
 using std::vector;
 using std::string;
+
+namespace xh
+{
+
+  class XmlrpcHelperException : public ros::Exception
+  {
+  public:
+    XmlrpcHelperException(const std::string& what)
+      : ros::Exception(what) {}
+  };
+
+  typedef XmlRpc::XmlRpcValue Struct;
+  typedef XmlRpc::XmlRpcValue Array;
+
+  template <class T>
+  void fetchParam(ros::NodeHandle nh, const std::string& param_name, T& output)
+  {
+    XmlRpc::XmlRpcValue val;
+    bool ok = false;
+    try
+    {
+      ok = nh.getParam(param_name, val);
+    }
+    catch(const ros::InvalidNameException& e) {}
+
+    if (!ok)
+    {
+      std::ostringstream err_msg;
+      err_msg << "could not load parameter '" << param_name << "'. (namespace: "
+              << nh.getNamespace() << ")";
+      throw XmlrpcHelperException(err_msg.str());
+    }
+
+    output = static_cast<T>(val);
+  }
+
+}
+
+inline std::vector<std::string> getIds(const ros::NodeHandle &nh, const std::string& key)
+{
+  using std::vector;
+  using std::string;
+
+  xh::Struct xh_st;
+  try {xh::fetchParam(nh, key, xh_st);}
+  catch (const xh::XmlrpcHelperException&)
+  {
+    ROS_DEBUG_STREAM("Requested data found in the parameter server (namespace " <<
+                     nh.getNamespace() + "/" + key << ").");
+    return vector<string>();
+  }
+
+  vector<string> out;
+  for (xh::Struct::iterator it = xh_st.begin(); it != xh_st.end(); ++it)
+  {
+    out.push_back(it->first);
+  }
+  return out;
+}
+
+
+void convert(const urdf::Vector3 &in, eVector3 &out){
+  out = eVector3(in.x, in.y, in.z);
+}
+
+void convert(const urdf::Rotation &in, eMatrixRot &out){
+  out = eQuaternion(in.w, in.x, in.y, in.z);
+}
+
+
+void convert(const urdf::Pose &in, eMatrixHom &out){
+  eVector3 r;
+  convert(in.position, r);
+  eMatrixRot E;
+  convert(in.rotation, E);
+  out = createMatrix(E, r);
+}
+
+
+
 
 namespace gazebo_ros_control
 {
@@ -98,7 +183,7 @@ namespace gazebo_ros_control
 
        urdf::Pose tf_urdf = urdf_sensor_link->parent_joint->parent_to_joint_origin_transform;
        eMatrixHom tf_eigen;
-       pal::convert(tf_urdf, tf_eigen);
+       convert(tf_urdf, tf_eigen);
        sensorTransform = tf_eigen*sensorTransform;
 
        urdf_sensor_link = urdf_sensor_link->getParent();
