@@ -2,6 +2,12 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Added missing dependencies
+* Added catkin depends so api/abi checking works
+* Contributors: Sam Pfeiffer
+
 0.0.3 (2016-05-06)
 ------------------
 * Add explicitly eigen dependency
