@@ -12,7 +12,6 @@
 #include <hardware_interface/force_torque_sensor_interface.h>
 #include <hardware_interface/imu_sensor_interface.h>
 #include <joint_limits_interface/joint_limits_interface.h>
-#include <pal_ros_control/pal_actuator_command_interface.h>
 #include <gazebo_ros_control/robot_hw_sim.h>
 
 #include <gazebo/physics/physics.hh>
