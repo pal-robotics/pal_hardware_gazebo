@@ -18,6 +18,7 @@
   <depend>gazebo_ros_control</depend>
   <depend>gazebo</depend>
   <depend>cmake_modules</depend>
+  <depend>eigen</depend>
 
   <export>
     <gazebo_ros_control plugin="${prefix}/pal_hardware_gazebo_plugins.xml"/>
