@@ -1,8 +1,11 @@
-#ifndef PAL_HARDWARE_PAL_REEMC_PAL_GAZEBO_H
-#define PAL_HARDWARE_PAL_REEMC_PAL_GAZEBO_H
+#ifndef PAL_HARDWARE_GAZEBO_H
+#define PAL_HARDWARE_GAZEBO_H
 
 #include <vector>
 #include <string>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 #include <control_toolbox/pid.h>
 
@@ -19,7 +22,7 @@
 
 #include <gazebo_ros_control/default_robot_hw_sim.h>
 
-#include <pal_robot_tools/math_utils.h>
+typedef Eigen::Isometry3d eMatrixHom;
 
 namespace gazebo_ros_control
 {
@@ -115,4 +118,4 @@ private:
 
 }
 
-#endif // REEMC_HARDWARE_GAZEBO_REEMC_HARDWARE_GAZEBO_H
+#endif // PAL_HARDWARE_GAZEBO_H

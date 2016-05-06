@@ -44,6 +44,7 @@
 typedef Eigen::Vector3d   eVector3;
 typedef Eigen::Isometry3d eMatrixHom;
 typedef Eigen::Matrix3d   eMatrixRot;
+typedef Eigen::Quaternion<double>   eQuaternion;
 
 using std::vector;
 using std::string;
@@ -116,6 +117,14 @@ void convert(const urdf::Rotation &in, eMatrixRot &out){
   out = eQuaternion(in.w, in.x, in.y, in.z);
 }
 
+inline eMatrixHom createMatrix( eMatrixRot const& rot, eVector3 const& trans)
+{
+  eMatrixHom temp;
+  temp.setIdentity();
+  temp = (rot);
+  temp.translation() = trans;
+  return temp;
+}
 
 void convert(const urdf::Pose &in, eMatrixHom &out){
   eVector3 r;
@@ -125,7 +134,13 @@ void convert(const urdf::Pose &in, eMatrixHom &out){
   out = createMatrix(E, r);
 }
 
-
+template<typename T>
+Eigen::Matrix<T, 3, 3> skew(const Eigen::Matrix<T, 3, 1>& vec)
+{
+  return (Eigen::Matrix<T, 3, 3>() << T(0), -vec(2), vec(1),
+          vec(2), T(0), -vec(0),
+          -vec(1), vec(0), T(0)).finished();
+}
 
 
 namespace gazebo_ros_control
