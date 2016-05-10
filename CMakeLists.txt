@@ -1,31 +1,32 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(pal_hardware_gazebo)
 
+find_package(cmake_modules REQUIRED)
+find_package(Eigen REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   angles
   hardware_interface
   joint_limits_interface
   gazebo_ros_control
-  pal_ros_control
-  dynamic_introspection
-  pal_robot_tools
 )
 
 find_package(gazebo REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 
 catkin_package(
-   INCLUDE_DIRS include
-    DEPENDS gazebo
+    INCLUDE_DIRS include
+    CATKIN_DEPENDS control_toolbox hardware_interface joint_limits_interface gazebo_ros_control
+    DEPENDS gazebo Eigen
     LIBRARIES ${PROJECT_NAME}
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS})
+include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
 link_directories(${GAZEBO_LIBRARY_DIRS})
 
 add_library(${PROJECT_NAME} src/pal_hardware_gazebo.cpp)
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} ${EIGEN_LIBRARIES})
 
 install(TARGETS ${PROJECT_NAME}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

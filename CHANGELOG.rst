@@ -2,6 +2,19 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.0.4 (2016-05-06)
+------------------
+* Added missing dependencies
+* Added catkin depends so api/abi checking works
+* Contributors: Sam Pfeiffer
+
+0.0.3 (2016-05-06)
+------------------
+* Add explicitly eigen dependency
+* Pulled necessary functions from pal_robot_tools to here to remove dependecy tree
+* Removed unused dependencies
+* Contributors: Sam Pfeiffer
+
 0.0.2 (2016-04-14)
 ------------------
 * Added missing IMU parsing and clean up
