@@ -92,12 +92,17 @@ namespace gazebo_ros_control
       }
 
       // Recursively follow the transform until the parent
-      bool parentFount = 0;
+      bool parentFound = false;
       eMatrixHom sensorTransform;
       sensorTransform.setIdentity();
 
-      while(!parentFount){
-       std::cerr<<"      "<<urdf_sensor_link->name<<std::endl;
+      // Check that is not the actual first link
+       if(urdf_sensor_link->name == urdf_sensor_joint->child_link_name){
+           parentFound = true;
+        }
+
+      while(!parentFound){
+       std::cerr<<"      "<<urdf_sensor_link->name<<" - "<<urdf_sensor_joint->child_link_name<<std::endl;
 
        urdf::Pose tf_urdf = urdf_sensor_link->parent_joint->parent_to_joint_origin_transform;
        eMatrixHom tf_eigen;
@@ -107,12 +112,13 @@ namespace gazebo_ros_control
        urdf_sensor_link = urdf_sensor_link->getParent();
 
        if(urdf_sensor_joint->child_link_name == urdf_sensor_link->name){
-         parentFount = true;
-       }
-       else{
-       //  urdf_sensor_link = urdf_sensor_link->getParent();
+         parentFound = true;
        }
 
+      }
+
+      if(!parentFound){
+       ROS_ERROR_STREAM("No frame found for force torque sensor");
       }
 
       //std::cerr<<"Sensor name: "<<sensor_name<<"transform: "<<std::endl<<sensorTransform.matrix()<<std::endl;
