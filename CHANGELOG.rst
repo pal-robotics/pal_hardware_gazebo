@@ -2,8 +2,8 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.5 (2016-06-30)
+------------------
 * Merge branch 'dubnium-devel' of gitlab:control/pal_hardware_gazebo into dubnium-devel
 * Bug fix for when the ft sensors is the first link
 * Contributors: Hilario Tome
