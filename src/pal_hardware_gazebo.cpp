@@ -250,9 +250,12 @@ namespace gazebo_ros_control
       ros::NodeHandle imu_sensor_nh(imu_nh, sensor_name);
       xh::fetchParam(imu_sensor_nh, "frame", sensor_frame_id);
 
+      std::string gazeboSensorName;
+      xh::fetchParam(imu_sensor_nh, "gazebo_sensor_name", gazeboSensorName);
+      
       boost::shared_ptr<gazebo::sensors::ImuSensor> imu_sensor;
       imu_sensor =  boost::dynamic_pointer_cast<gazebo::sensors::ImuSensor>
-          (gazebo::sensors::SensorManager::Instance()->GetSensor("imu_sensor"));
+          (gazebo::sensors::SensorManager::Instance()->GetSensor(gazeboSensorName));
       if (!imu_sensor){
         ROS_ERROR_STREAM("Could not find base IMU sensor.");
         return false;
