@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   hardware_interface
   joint_limits_interface
   gazebo_ros_control
+  pal_hardware_interfaces
 )
 
 find_package(gazebo REQUIRED)
