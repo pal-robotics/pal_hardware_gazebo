@@ -21,7 +21,8 @@
   <depend>cmake_modules</depend>
   <depend>eigen</depend>
   <depend>pal_hardware_interfaces</depend>
-
+  <depend>gazebo</depend>
+  
   <export>
     <gazebo_ros_control plugin="${prefix}/pal_hardware_gazebo_plugins.xml"/>
   </export>
