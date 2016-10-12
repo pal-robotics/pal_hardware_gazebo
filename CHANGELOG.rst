@@ -2,6 +2,16 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* gazebo include dirs
+* Removed duplicated gazebo plugin
+* Added gazebo depend
+* Merge branch 'dubnium-devel' of gitlab:control/pal_hardware_gazebo into dubnium-devel
+* Added pal_hardware_interfaces depend
+* Removed hardcoded imu
+* Contributors: Hilario Tome
+
 0.0.5 (2016-06-30)
 ------------------
 * Merge branch 'dubnium-devel' of gitlab:control/pal_hardware_gazebo into dubnium-devel
