@@ -6,6 +6,7 @@ find_package(Eigen REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   angles
+  control_toolbox
   hardware_interface
   joint_limits_interface
   gazebo_ros_control
