@@ -2,6 +2,11 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add control_toolboxes in find_package
+* Contributors: Jordi Pages
+
 0.0.7 (2016-10-14)
 ------------------
 
