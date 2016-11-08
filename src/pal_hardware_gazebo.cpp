@@ -253,8 +253,9 @@ namespace gazebo_ros_control
       std::string gazeboSensorName;
       xh::fetchParam(imu_sensor_nh, "gazebo_sensor_name", gazeboSensorName);
       
-      boost::shared_ptr<gazebo::sensors::ImuSensor> imu_sensor;
-      imu_sensor =  boost::dynamic_pointer_cast<gazebo::sensors::ImuSensor>
+//      std::shared_ptr<gazebo::sensors::ImuSensor> imu_sensor;
+      gazebo::sensors::ImuSensorPtr
+      imu_sensor =  std::dynamic_pointer_cast<gazebo::sensors::ImuSensor>
           (gazebo::sensors::SensorManager::Instance()->GetSensor(gazeboSensorName));
       if (!imu_sensor){
         ROS_ERROR_STREAM("Could not find base IMU sensor.");
@@ -447,18 +448,18 @@ namespace gazebo_ros_control
     for(size_t i = 0; i < imuSensorDefinitions_.size(); ++i){
       ImuSensorDefinitionPtr &imu = imuSensorDefinitions_[i];
 
-      gazebo::math::Quaternion imu_quat = imu->gazebo_imu_sensor->GetOrientation();
+      gazebo::math::Quaternion imu_quat = imu->gazebo_imu_sensor->Orientation();
       imu->orientation[0] = imu_quat.x;
       imu->orientation[1] = imu_quat.y;
       imu->orientation[2] = imu_quat.z;
       imu->orientation[3] = imu_quat.w;
 
-      gazebo::math::Vector3 imu_ang_vel = imu->gazebo_imu_sensor->GetAngularVelocity();
+      gazebo::math::Vector3 imu_ang_vel = imu->gazebo_imu_sensor->AngularVelocity();
       imu->base_ang_vel[0] = imu_ang_vel.x;
       imu->base_ang_vel[1] = imu_ang_vel.y;
       imu->base_ang_vel[2] = imu_ang_vel.z;
 
-      gazebo::math::Vector3 imu_lin_acc = imu->gazebo_imu_sensor->GetLinearAcceleration();
+      gazebo::math::Vector3 imu_lin_acc = imu->gazebo_imu_sensor->LinearAcceleration();
       imu->linear_acceleration[0] =  imu_lin_acc.x;
       imu->linear_acceleration[1] =  imu_lin_acc.y;
       imu->linear_acceleration[2] =  imu_lin_acc.z;

@@ -53,7 +53,7 @@ namespace gazebo_ros_control
 
   class ImuSensorDefinition{
   public:
-      boost::shared_ptr<gazebo::sensors::ImuSensor> gazebo_imu_sensor;
+      std::shared_ptr<gazebo::sensors::ImuSensor> gazebo_imu_sensor;
       std::string sensorName;
       std::string sensorFrame;
 
