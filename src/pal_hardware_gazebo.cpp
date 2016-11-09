@@ -65,19 +65,24 @@ namespace xh
   template <class T>
   void fetchParam(ros::NodeHandle nh, const std::string& param_name, T& output)
   {
+    std::cerr<<"Fetching parameter: "<<param_name<<std::endl;
     XmlRpc::XmlRpcValue val;
     bool ok = false;
     try
     {
       ok = nh.getParam(param_name, val);
     }
-    catch(const ros::InvalidNameException& e) {}
+    catch(const ros::InvalidNameException& e) {
+      ROS_ERROR_STREAM(e.what());
+    }
 
     if (!ok)
     {
       std::ostringstream err_msg;
       err_msg << "could not load parameter '" << param_name << "'. (namespace: "
               << nh.getNamespace() << ")";
+      ROS_ERROR_STREAM("could not load parameter '" << param_name << "'. (namespace: "
+                       << nh.getNamespace() << ")");
       throw XmlrpcHelperException(err_msg.str());
     }
 
@@ -158,14 +163,15 @@ namespace gazebo_ros_control
     vector<string> ft_ids = getIds(nh, ft_ns);
     ros::NodeHandle ft_nh(nh, ft_ns);
     typedef vector<string>::const_iterator Iterator;
+
     for (Iterator it = ft_ids.begin(); it != ft_ids.end(); ++it){
+
       std::string sensor_name = *it;
       std::string sensor_joint_name;
       std::string sensor_frame_id;
       ros::NodeHandle ft_sensor_nh(ft_nh, sensor_name);
       xh::fetchParam(ft_sensor_nh, "frame", sensor_frame_id);
       xh::fetchParam(ft_sensor_nh, "sensor_joint", sensor_joint_name);
-
       ForceTorqueSensorDefinitionPtr ft(new ForceTorqueSensorDefinition(sensor_name,
                                                                         sensor_joint_name,
                                                                         sensor_frame_id));
@@ -199,8 +205,6 @@ namespace gazebo_ros_control
         }
 
       while(!parentFound){
-       std::cerr<<"      "<<urdf_sensor_link->name<<" - "<<urdf_sensor_joint->child_link_name<<std::endl;
-
        urdf::Pose tf_urdf = urdf_sensor_link->parent_joint->parent_to_joint_origin_transform;
        eMatrixHom tf_eigen;
        convert(tf_urdf, tf_eigen);
@@ -218,9 +222,6 @@ namespace gazebo_ros_control
        ROS_ERROR_STREAM("No frame found for force torque sensor");
       }
 
-      //std::cerr<<"Sensor name: "<<sensor_name<<"transform: "<<std::endl<<sensorTransform.matrix()<<std::endl;
-      //std::cerr<<"Sensor name: "<<sensor_name<<"transform transpose: "<<std::endl<<sensorTransform.matrix().transpose()<<std::endl;
-
       ft->sensorTransform = sensorTransform;
 
       if (!ft->gazebo_joint){
@@ -229,7 +230,7 @@ namespace gazebo_ros_control
       }
 
       forceTorqueSensorDefinitions_.push_back(ft);
-      ROS_INFO_STREAM("Parsed fake FT sensor: "<<sensor_name<<" in frame: "<<sensor_frame_id);
+      ROS_INFO_STREAM("Parsed FT sensor: "<<sensor_name<<" in frame: "<<sensor_frame_id);
     }
     return true;
   }
