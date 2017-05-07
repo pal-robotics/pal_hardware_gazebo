@@ -65,7 +65,6 @@ namespace xh
   template <class T>
   void fetchParam(ros::NodeHandle nh, const std::string& param_name, T& output)
   {
-    std::cerr<<"Fetching parameter: "<<param_name<<std::endl;
     XmlRpc::XmlRpcValue val;
     bool ok = false;
     try
@@ -282,90 +281,9 @@ namespace gazebo_ros_control
 
     ROS_INFO_STREAM("Loading PAL HARWARE GAZEBO");
 
-    // register hardware interfaces
-    // TODO: Automate, so generic interfaces can be added
-    registerInterface(&js_interface_);
-    registerInterface(&ej_interface_);
-    registerInterface(&pj_interface_);
-    registerInterface(&vj_interface_);
-
-    // cache transmisions information
-    DefaultRobotHWSim::transmission_infos_ = transmissions;
-
-    // populate hardware interfaces, bind them to raw Gazebo data
-    namespace ti = transmission_interface;
-    BOOST_FOREACH(const ti::TransmissionInfo& tr_info, transmission_infos_)
-    {
-      BOOST_FOREACH(const ti::JointInfo& joint_info, tr_info.joints_)
-      {
-        BOOST_FOREACH(const std::string& iface_type, joint_info.hardware_interfaces_)
-        {
-          // TODO: Wrap in method for brevity?
-          RwResPtr res;
-          // TODO: A plugin-based approach would do better than this 'if-elseif' chain
-          // To do this, move contructor logic to init method, and unify signature
-          if (iface_type == "hardware_interface/JointStateInterface")
-          {
-            res.reset(new internal::JointState());
-          }
-          else if (iface_type == "hardware_interface/PositionJointInterface")
-          {
-            res.reset(new internal::PositionJoint());
-          }
-          else if (iface_type == "hardware_interface/VelocityJointInterface")
-          {
-            res.reset(new internal::VelocityJoint());
-          }
-          else if (iface_type == "hardware_interface/EffortJointInterface")
-          {
-            res.reset(new internal::EffortJoint());
-          }
-
-          // initialize and add to list of managed resources
-          if (res)
-          {
-            try
-            {
-              res->init(joint_info.name_,
-                        nh,
-                        model,
-                        urdf_model,
-                        this);
-              rw_resources_.push_back(res);
-              ROS_DEBUG_STREAM("Registered joint '" << joint_info.name_ << "' in hardware interface '" <<
-                               iface_type << "'."); // TODO: Lower severity to debug!
-            }
-            catch (const internal::ExistingResourceException&) {} // resource already added, no problem
-            catch (const std::runtime_error& ex)
-            {
-              ROS_ERROR_STREAM("Failed to initialize gazebo_ros_control plugin.\n" <<
-                               ex.what());
-              return false;
-            }
-            catch(...)
-            {
-              ROS_ERROR_STREAM("Failed to initialize gazebo_ros_control plugin.\n" <<
-                               "Could not add resource '" << joint_info.name_ << "' to hardware interface '" <<
-                               iface_type << "'.");
-              return false;
-            }
-          }
-
-        }
-      }
+    if(!DefaultRobotHWSim::initSim(robot_ns, nh, model, urdf_model, transmissions)){
+       return false;
     }
-
-    // initialize the emergency stop code
-    e_stop_active_ = false;
-
-    // joint mode switching
-    mode_switch_enabled_ = true;
-    nh.getParam("gazebo_ros_control/enable_joint_mode_switching", mode_switch_enabled_); // TODO: Check namespace
-    const std::string enabled_str = mode_switch_enabled_ ? "enabled" : "disabled";
-    ROS_INFO_STREAM("Joint mode switching is " << enabled_str);
-
-    // initialize active writers
-    initActiveWriteResources();
 
     parseForceTorqueSensors(nh, model, urdf_model);
 
@@ -404,10 +322,7 @@ namespace gazebo_ros_control
   void PalHardwareGazebo::readSim(ros::Time time, ros::Duration period)
   {
     // read all resources
-    BOOST_FOREACH(RwResPtr res, rw_resources_)
-    {
-      res->read(time, period, e_stop_active_);
-    }
+    DefaultRobotHWSim::readSim(time, period);
 
     // Read force-torque sensors
     for(size_t i = 0; i < forceTorqueSensorDefinitions_.size(); ++i){
@@ -469,11 +384,7 @@ namespace gazebo_ros_control
 
   void PalHardwareGazebo::writeSim(ros::Time time, ros::Duration period)
   {
-    boost::unique_lock<boost::mutex> lock(mutex_);
-    BOOST_FOREACH(RwResPtr res, active_w_resources_rt_)
-    {
-      res->write(time, period, e_stop_active_);
-    }
+    DefaultRobotHWSim::writeSim(time, period);
     // PUBLISH_DEBUG_DATA_TOPIC;
   }
 

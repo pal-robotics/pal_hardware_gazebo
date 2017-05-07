@@ -90,7 +90,7 @@ public:
                const urdf::Model* const urdf_model,
                std::vector<transmission_interface::TransmissionInfo> transmissions);
   void readSim(ros::Time time, ros::Duration period);
-  void writeSim(ros::Time time, ros::Duration period);
+  void writeSim(ros::Time time, ros::Duration period) override;
 
 private:
 
