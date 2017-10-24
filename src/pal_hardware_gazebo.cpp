@@ -281,7 +281,7 @@ namespace gazebo_ros_control
                                   std::vector<transmission_interface::TransmissionInfo> transmissions)
   {
 
-    ROS_INFO_STREAM("Loading PAL HARWARE GAZEBO");
+    ROS_INFO_STREAM("Loading PAL HARDWARE GAZEBO");
 
     if(!DefaultRobotHWSim::initSim(robot_ns, nh, model, urdf_model, transmissions)){
        return false;
