@@ -41,68 +41,71 @@
 
 #include <pal_hardware_gazebo/pal_hardware_gazebo.h>
 
-#include <dynamic_introspection/DynamicIntrospection.h>
+#include <dynamic_introspection/dynamic_introspection.h>
 
-typedef Eigen::Vector3d   eVector3;
+typedef Eigen::Vector3d eVector3;
 typedef Eigen::Isometry3d eMatrixHom;
-typedef Eigen::Matrix3d   eMatrixRot;
-typedef Eigen::Quaternion<double>   eQuaternion;
+typedef Eigen::Matrix3d eMatrixRot;
+typedef Eigen::Quaternion<double> eQuaternion;
 
 using std::vector;
 using std::string;
 
 namespace xh
 {
-
-  class XmlrpcHelperException : public ros::Exception
+class XmlrpcHelperException : public ros::Exception
+{
+public:
+  XmlrpcHelperException(const std::string &what) : ros::Exception(what)
   {
-  public:
-    XmlrpcHelperException(const std::string& what)
-      : ros::Exception(what) {}
-  };
+  }
+};
 
-  typedef XmlRpc::XmlRpcValue Struct;
-  typedef XmlRpc::XmlRpcValue Array;
+typedef XmlRpc::XmlRpcValue Struct;
+typedef XmlRpc::XmlRpcValue Array;
 
-  template <class T>
-  void fetchParam(ros::NodeHandle nh, const std::string& param_name, T& output)
+template <class T>
+void fetchParam(ros::NodeHandle nh, const std::string &param_name, T &output)
+{
+  XmlRpc::XmlRpcValue val;
+  bool ok = false;
+  try
   {
-    XmlRpc::XmlRpcValue val;
-    bool ok = false;
-    try
-    {
-      ok = nh.getParam(param_name, val);
-    }
-    catch(const ros::InvalidNameException& e) {
-      ROS_ERROR_STREAM(e.what());
-    }
-
-    if (!ok)
-    {
-      std::ostringstream err_msg;
-      err_msg << "could not load parameter '" << param_name << "'. (namespace: "
-              << nh.getNamespace() << ")";
-      ROS_ERROR_STREAM("could not load parameter '" << param_name << "'. (namespace: "
-                       << nh.getNamespace() << ")");
-      throw XmlrpcHelperException(err_msg.str());
-    }
-
-    output = static_cast<T>(val);
+    ok = nh.getParam(param_name, val);
+  }
+  catch (const ros::InvalidNameException &e)
+  {
+    ROS_ERROR_STREAM(e.what());
   }
 
+  if (!ok)
+  {
+    std::ostringstream err_msg;
+    err_msg << "could not load parameter '" << param_name
+            << "'. (namespace: " << nh.getNamespace() << ")";
+    ROS_ERROR_STREAM("could not load parameter '"
+                     << param_name << "'. (namespace: " << nh.getNamespace() << ")");
+    throw XmlrpcHelperException(err_msg.str());
+  }
+
+  output = static_cast<T>(val);
+}
 }
 
-inline std::vector<std::string> getIds(const ros::NodeHandle &nh, const std::string& key)
+inline std::vector<std::string> getIds(const ros::NodeHandle &nh, const std::string &key)
 {
   using std::vector;
   using std::string;
 
   xh::Struct xh_st;
-  try {xh::fetchParam(nh, key, xh_st);}
-  catch (const xh::XmlrpcHelperException&)
+  try
   {
-    ROS_DEBUG_STREAM("Requested data found in the parameter server (namespace " <<
-                     nh.getNamespace() + "/" + key << ").");
+    xh::fetchParam(nh, key, xh_st);
+  }
+  catch (const xh::XmlrpcHelperException &)
+  {
+    ROS_DEBUG_STREAM("Requested data found in the parameter server (namespace "
+                     << nh.getNamespace() + "/" + key << ").");
     return vector<string>();
   }
 
@@ -115,15 +118,17 @@ inline std::vector<std::string> getIds(const ros::NodeHandle &nh, const std::str
 }
 
 
-void convert(const urdf::Vector3 &in, eVector3 &out){
+void convert(const urdf::Vector3 &in, eVector3 &out)
+{
   out = eVector3(in.x, in.y, in.z);
 }
 
-void convert(const urdf::Rotation &in, eMatrixRot &out){
+void convert(const urdf::Rotation &in, eMatrixRot &out)
+{
   out = eQuaternion(in.w, in.x, in.y, in.z);
 }
 
-inline eMatrixHom createMatrix( eMatrixRot const& rot, eVector3 const& trans)
+inline eMatrixHom createMatrix(eMatrixRot const &rot, eVector3 const &trans)
 {
   eMatrixHom temp;
   temp.setIdentity();
@@ -132,7 +137,8 @@ inline eMatrixHom createMatrix( eMatrixRot const& rot, eVector3 const& trans)
   return temp;
 }
 
-void convert(const urdf::Pose &in, eMatrixHom &out){
+void convert(const urdf::Pose &in, eMatrixHom &out)
+{
   eVector3 r;
   convert(in.position, r);
   eMatrixRot E;
@@ -140,256 +146,266 @@ void convert(const urdf::Pose &in, eMatrixHom &out){
   out = createMatrix(E, r);
 }
 
-template<typename T>
-Eigen::Matrix<T, 3, 3> skew(const Eigen::Matrix<T, 3, 1>& vec)
+template <typename T>
+Eigen::Matrix<T, 3, 3> skew(const Eigen::Matrix<T, 3, 1> &vec)
 {
-  return (Eigen::Matrix<T, 3, 3>() << T(0), -vec(2), vec(1),
-          vec(2), T(0), -vec(0),
-          -vec(1), vec(0), T(0)).finished();
+  return (Eigen::Matrix<T, 3, 3>() << T(0), -vec(2), vec(1), vec(2), T(0), -vec(0),
+          -vec(1), vec(0), T(0))
+      .finished();
 }
 
 
 namespace gazebo_ros_control
 {
+using namespace hardware_interface;
 
-  using namespace hardware_interface;
+bool PalHardwareGazebo::parseForceTorqueSensors(ros::NodeHandle &nh,
+                                                gazebo::physics::ModelPtr model,
+                                                const urdf::Model *const urdf_model)
+{
+  using std::vector;
+  using std::string;
 
-  bool PalHardwareGazebo::parseForceTorqueSensors(ros::NodeHandle &nh,
-                                                  gazebo::physics::ModelPtr model,
-                                                  const urdf::Model* const urdf_model){
-    using std::vector;
-    using std::string;
+  const string ft_ns = "force_torque";
+  vector<string> ft_ids = getIds(nh, ft_ns);
+  ros::NodeHandle ft_nh(nh, ft_ns);
+  typedef vector<string>::const_iterator Iterator;
 
-    const string ft_ns = "force_torque";
-    vector<string> ft_ids = getIds(nh, ft_ns);
-    ros::NodeHandle ft_nh(nh, ft_ns);
-    typedef vector<string>::const_iterator Iterator;
-
-    for (Iterator it = ft_ids.begin(); it != ft_ids.end(); ++it){
-
-      std::string sensor_name = *it;
-      std::string sensor_joint_name;
-      std::string sensor_frame_id;
-      ros::NodeHandle ft_sensor_nh(ft_nh, sensor_name);
-      xh::fetchParam(ft_sensor_nh, "frame", sensor_frame_id);
-      xh::fetchParam(ft_sensor_nh, "sensor_joint", sensor_joint_name);
-      ForceTorqueSensorDefinitionPtr ft(new ForceTorqueSensorDefinition(sensor_name,
-                                                                        sensor_joint_name,
-                                                                        sensor_frame_id));
-
-      ft->gazebo_joint  = model->GetJoint(ft->sensorJointName);
-
-      // Get sensor parent transform
-      boost::shared_ptr<const urdf::Link> urdf_sensor_link;
-      boost::shared_ptr<const urdf::Joint> urdf_sensor_joint;
-      urdf_sensor_link = urdf_model->getLink(ft->sensorFrame);
-      urdf_sensor_joint = urdf_model->getJoint(sensor_joint_name);
-
-      if(!urdf_sensor_link){
-        ROS_ERROR_STREAM("Problem finding link: "<<ft->sensorFrame<<" to attach FT sensor in robot model");
-        return false;
-      }
-
-      if(!urdf_sensor_joint){
-        ROS_ERROR_STREAM("Problem finding joint: "<<ft->sensorJointName<<" to attach FT sensor in robot model");
-        return false;
-      }
-
-      // Recursively follow the transform until the parent
-      bool parentFound = false;
-      eMatrixHom sensorTransform;
-      sensorTransform.setIdentity();
-
-      // Check that is not the actual first link
-       if(urdf_sensor_link->name == urdf_sensor_joint->child_link_name){
-           parentFound = true;
-        }
-
-      while(!parentFound){
-       urdf::Pose tf_urdf = urdf_sensor_link->parent_joint->parent_to_joint_origin_transform;
-       eMatrixHom tf_eigen;
-       convert(tf_urdf, tf_eigen);
-       sensorTransform = tf_eigen*sensorTransform;
-
-       urdf_sensor_link = urdf_sensor_link->getParent();
-
-       if(urdf_sensor_joint->child_link_name == urdf_sensor_link->name){
-         parentFound = true;
-       }
-
-      }
-
-      if(!parentFound){
-       ROS_ERROR_STREAM("No frame found for force torque sensor");
-      }
-
-      ft->sensorTransform = sensorTransform;
-
-      if (!ft->gazebo_joint){
-        ROS_ERROR_STREAM("Could not find joint '" << ft->sensorJointName << "' to which a force-torque sensor is attached.");
-        return false;
-      }
-
-      forceTorqueSensorDefinitions_.push_back(ft);
-      ROS_INFO_STREAM("Parsed FT sensor: "<<sensor_name<<" in frame: "<<sensor_frame_id);
-    }
-    return true;
-  }
-
-  bool PalHardwareGazebo::parseIMUSensors(ros::NodeHandle &nh,
-                                          gazebo::physics::ModelPtr model,
-                                          const urdf::Model* const urdf_model){
-    using std::vector;
-    using std::string;
-
-    const string imu_ns = "imu";
-    vector<string> imu_ids = getIds(nh, imu_ns);
-    ros::NodeHandle imu_nh(nh, imu_ns);
-    typedef vector<string>::const_iterator Iterator;
-    for (Iterator it = imu_ids.begin(); it != imu_ids.end(); ++it){
-      std::string sensor_name = *it;
-      std::string sensor_frame_id;
-      ros::NodeHandle imu_sensor_nh(imu_nh, sensor_name);
-      xh::fetchParam(imu_sensor_nh, "frame", sensor_frame_id);
-
-      std::string gazeboSensorName;
-      xh::fetchParam(imu_sensor_nh, "gazebo_sensor_name", gazeboSensorName);
-      
-      boost::shared_ptr<gazebo::sensors::ImuSensor> imu_sensor;
-      imu_sensor =  boost::dynamic_pointer_cast<gazebo::sensors::ImuSensor>
-          (gazebo::sensors::SensorManager::Instance()->GetSensor(gazeboSensorName));
-      if (!imu_sensor){
-        ROS_ERROR_STREAM("Could not find base IMU sensor.");
-        return false;
-      }
-
-      ImuSensorDefinitionPtr imu(new ImuSensorDefinition(sensor_name, sensor_frame_id));
-      imu->gazebo_imu_sensor = imu_sensor;
-      imuSensorDefinitions_.push_back(imu);
-      ROS_INFO_STREAM("Parsed imu sensor: "<<sensor_name<<" in frame: "<<sensor_frame_id);
-    }
-    return true;
-  }
-
-  PalHardwareGazebo::PalHardwareGazebo()
-    : DefaultRobotHWSim()
-  {}
-
-  bool PalHardwareGazebo::initSim(const std::string& robot_ns,
-                                  ros::NodeHandle nh, gazebo::physics::ModelPtr model,
-                                  const urdf::Model* const urdf_model,
-                                  std::vector<transmission_interface::TransmissionInfo> transmissions)
+  for (Iterator it = ft_ids.begin(); it != ft_ids.end(); ++it)
   {
+    std::string sensor_name = *it;
+    std::string sensor_joint_name;
+    std::string sensor_frame_id;
+    ros::NodeHandle ft_sensor_nh(ft_nh, sensor_name);
+    xh::fetchParam(ft_sensor_nh, "frame", sensor_frame_id);
+    xh::fetchParam(ft_sensor_nh, "sensor_joint", sensor_joint_name);
+    ForceTorqueSensorDefinitionPtr ft(
+        new ForceTorqueSensorDefinition(sensor_name, sensor_joint_name, sensor_frame_id));
 
-    ROS_INFO_STREAM("Loading PAL HARDWARE GAZEBO");
+    ft->gazebo_joint = model->GetJoint(ft->sensorJointName);
 
-    if(!DefaultRobotHWSim::initSim(robot_ns, nh, model, urdf_model, transmissions)){
-       return false;
+    // Get sensor parent transform
+    boost::shared_ptr<const urdf::Link> urdf_sensor_link;
+    boost::shared_ptr<const urdf::Joint> urdf_sensor_joint;
+    urdf_sensor_link = urdf_model->getLink(ft->sensorFrame);
+    urdf_sensor_joint = urdf_model->getJoint(sensor_joint_name);
+
+    if (!urdf_sensor_link)
+    {
+      ROS_ERROR_STREAM("Problem finding link: " << ft->sensorFrame
+                                                << " to attach FT sensor in robot model");
+      return false;
     }
 
-    parseForceTorqueSensors(nh, model, urdf_model);
-
-    for(size_t i=0; i<forceTorqueSensorDefinitions_.size(); ++i){
-      ForceTorqueSensorDefinitionPtr &ft = forceTorqueSensorDefinitions_[i];
-      ft_sensor_interface_.registerHandle(ForceTorqueSensorHandle(ft->sensorName,
-                                                                  ft->sensorFrame,
-                                                                  &ft->force[0],
-                                          &ft->torque[0]));
+    if (!urdf_sensor_joint)
+    {
+      ROS_ERROR_STREAM("Problem finding joint: " << ft->sensorJointName
+                                                 << " to attach FT sensor in robot model");
+      return false;
     }
 
-    registerInterface(&ft_sensor_interface_);
-    ROS_DEBUG_STREAM("Registered force-torque sensors.");
+    // Recursively follow the transform until the parent
+    bool parentFound = false;
+    eMatrixHom sensorTransform;
+    sensorTransform.setIdentity();
 
-    // Hardware interfaces: Base IMU sensors
-    parseIMUSensors(nh, model, urdf_model);
-
-    for(size_t i=0; i<imuSensorDefinitions_.size(); ++i){
-      ImuSensorDefinitionPtr &imu = imuSensorDefinitions_[i];
-
-      ImuSensorHandle::Data data;
-      data.name = imu->sensorName;
-      data.frame_id = imu->sensorFrame;
-      data.orientation = &imu->orientation[0];
-      data.linear_acceleration = &imu->linear_acceleration[0];
-      data.angular_velocity = &imu->base_ang_vel[0];
-      imu_sensor_interface_.registerHandle(ImuSensorHandle(data));
+    // Check that is not the actual first link
+    if (urdf_sensor_link->name == urdf_sensor_joint->child_link_name)
+    {
+      parentFound = true;
     }
 
-    registerInterface(&imu_sensor_interface_);
-    ROS_DEBUG_STREAM("Registered IMU sensor.");
+    while (!parentFound)
+    {
+      urdf::Pose tf_urdf = urdf_sensor_link->parent_joint->parent_to_joint_origin_transform;
+      eMatrixHom tf_eigen;
+      convert(tf_urdf, tf_eigen);
+      sensorTransform = tf_eigen * sensorTransform;
 
-    return true;
+      urdf_sensor_link = urdf_sensor_link->getParent();
+
+      if (urdf_sensor_joint->child_link_name == urdf_sensor_link->name)
+      {
+        parentFound = true;
+      }
+    }
+
+    if (!parentFound)
+    {
+      ROS_ERROR_STREAM("No frame found for force torque sensor");
+    }
+
+    ft->sensorTransform = sensorTransform;
+
+    if (!ft->gazebo_joint)
+    {
+      ROS_ERROR_STREAM("Could not find joint '"
+                       << ft->sensorJointName << "' to which a force-torque sensor is attached.");
+      return false;
+    }
+
+    forceTorqueSensorDefinitions_.push_back(ft);
+    ROS_INFO_STREAM("Parsed FT sensor: " << sensor_name << " in frame: " << sensor_frame_id);
   }
+  return true;
+}
 
-  void PalHardwareGazebo::readSim(ros::Time time, ros::Duration period)
+bool PalHardwareGazebo::parseIMUSensors(ros::NodeHandle &nh, gazebo::physics::ModelPtr model,
+                                        const urdf::Model *const urdf_model)
+{
+  using std::vector;
+  using std::string;
+
+  const string imu_ns = "imu";
+  vector<string> imu_ids = getIds(nh, imu_ns);
+  ros::NodeHandle imu_nh(nh, imu_ns);
+  typedef vector<string>::const_iterator Iterator;
+  for (Iterator it = imu_ids.begin(); it != imu_ids.end(); ++it)
   {
-    // read all resources
-    DefaultRobotHWSim::readSim(time, period);
+    std::string sensor_name = *it;
+    std::string sensor_frame_id;
+    ros::NodeHandle imu_sensor_nh(imu_nh, sensor_name);
+    xh::fetchParam(imu_sensor_nh, "frame", sensor_frame_id);
 
-    // Read force-torque sensors
-    for(size_t i = 0; i < forceTorqueSensorDefinitions_.size(); ++i){
-      ForceTorqueSensorDefinitionPtr &ft = forceTorqueSensorDefinitions_[i];
-      gazebo::physics::JointWrench ft_wrench = ft->gazebo_joint->GetForceTorque(0u);
+    std::string gazeboSensorName;
+    xh::fetchParam(imu_sensor_nh, "gazebo_sensor_name", gazeboSensorName);
 
-      ft->force[0]  = ft_wrench.body2Force.x;
-      ft->force[1]  = ft_wrench.body2Force.y;
-      ft->force[2]  = ft_wrench.body2Force.z;
-      ft->torque[0] = ft_wrench.body2Torque.x;
-      ft->torque[1] = ft_wrench.body2Torque.y;
-      ft->torque[2] =  ft_wrench.body2Torque.z;
-
-      // Transform to sensor frame
-      Eigen::MatrixXd transform(6, 6);
-      transform.setZero();
-      transform.block(0, 0, 3, 3) = Eigen::Matrix3d::Identity();
-      transform.block(3, 3, 3, 3) = ft->sensorTransform.rotation().transpose();
-      eVector3 r = ft->sensorTransform.translation();
-      transform.block(3, 0, 3, 3) = skew(r)*ft->sensorTransform.rotation().transpose();
-
-      Eigen::VectorXd wrench(6);
-      wrench<<ft->torque[0], ft->torque[1], ft->torque[2],
-              ft->force[0], ft->force[1], ft->force[2];
-      Eigen::VectorXd transformedWrench(6);
-
-      transformedWrench = transform*wrench;
-
-      ft->torque[0] = transformedWrench(0);
-      ft->torque[1] = transformedWrench(1);
-      ft->torque[2] = transformedWrench(2);
-      ft->force[0]  = transformedWrench(3);
-      ft->force[1]  = transformedWrench(4);
-      ft->force[2]  = transformedWrench(5);
+    boost::shared_ptr<gazebo::sensors::ImuSensor> imu_sensor;
+    imu_sensor = boost::dynamic_pointer_cast<gazebo::sensors::ImuSensor>(
+        gazebo::sensors::SensorManager::Instance()->GetSensor(gazeboSensorName));
+    if (!imu_sensor)
+    {
+      ROS_ERROR_STREAM("Could not find base IMU sensor.");
+      return false;
     }
 
-    // Read IMU sensor
-    for(size_t i = 0; i < imuSensorDefinitions_.size(); ++i){
-      ImuSensorDefinitionPtr &imu = imuSensorDefinitions_[i];
-
-      gazebo::math::Quaternion imu_quat = imu->gazebo_imu_sensor->GetOrientation();
-      imu->orientation[0] = imu_quat.x;
-      imu->orientation[1] = imu_quat.y;
-      imu->orientation[2] = imu_quat.z;
-      imu->orientation[3] = imu_quat.w;
-
-      gazebo::math::Vector3 imu_ang_vel = imu->gazebo_imu_sensor->GetAngularVelocity();
-      imu->base_ang_vel[0] = imu_ang_vel.x;
-      imu->base_ang_vel[1] = imu_ang_vel.y;
-      imu->base_ang_vel[2] = imu_ang_vel.z;
-
-      gazebo::math::Vector3 imu_lin_acc = imu->gazebo_imu_sensor->GetLinearAcceleration();
-      imu->linear_acceleration[0] =  imu_lin_acc.x;
-      imu->linear_acceleration[1] =  imu_lin_acc.y;
-      imu->linear_acceleration[2] =  imu_lin_acc.z;
-    }
-
+    ImuSensorDefinitionPtr imu(new ImuSensorDefinition(sensor_name, sensor_frame_id));
+    imu->gazebo_imu_sensor = imu_sensor;
+    imuSensorDefinitions_.push_back(imu);
+    ROS_INFO_STREAM("Parsed imu sensor: " << sensor_name << " in frame: " << sensor_frame_id);
   }
+  return true;
+}
 
-  void PalHardwareGazebo::writeSim(ros::Time time, ros::Duration period)
+PalHardwareGazebo::PalHardwareGazebo() : DefaultRobotHWSim()
+{
+}
+
+bool PalHardwareGazebo::initSim(const std::string &robot_ns, ros::NodeHandle nh,
+                                gazebo::physics::ModelPtr model,
+                                const urdf::Model *const urdf_model,
+                                std::vector<transmission_interface::TransmissionInfo> transmissions)
+{
+  ROS_INFO_STREAM("Loading PAL HARDWARE GAZEBO");
+
+  if (!DefaultRobotHWSim::initSim(robot_ns, nh, model, urdf_model, transmissions))
   {
-    DefaultRobotHWSim::writeSim(time, period);
-    PUBLISH_DEBUG_DATA_TOPIC;
+    return false;
   }
 
+  parseForceTorqueSensors(nh, model, urdf_model);
+
+  for (size_t i = 0; i < forceTorqueSensorDefinitions_.size(); ++i)
+  {
+    ForceTorqueSensorDefinitionPtr &ft = forceTorqueSensorDefinitions_[i];
+    ft_sensor_interface_.registerHandle(ForceTorqueSensorHandle(
+        ft->sensorName, ft->sensorFrame, &ft->force[0], &ft->torque[0]));
+  }
+
+  registerInterface(&ft_sensor_interface_);
+  ROS_DEBUG_STREAM("Registered force-torque sensors.");
+
+  // Hardware interfaces: Base IMU sensors
+  parseIMUSensors(nh, model, urdf_model);
+
+  for (size_t i = 0; i < imuSensorDefinitions_.size(); ++i)
+  {
+    ImuSensorDefinitionPtr &imu = imuSensorDefinitions_[i];
+
+    ImuSensorHandle::Data data;
+    data.name = imu->sensorName;
+    data.frame_id = imu->sensorFrame;
+    data.orientation = &imu->orientation[0];
+    data.linear_acceleration = &imu->linear_acceleration[0];
+    data.angular_velocity = &imu->base_ang_vel[0];
+    imu_sensor_interface_.registerHandle(ImuSensorHandle(data));
+  }
+
+  registerInterface(&imu_sensor_interface_);
+  ROS_DEBUG_STREAM("Registered IMU sensor.");
+
+  return true;
+}
+
+void PalHardwareGazebo::readSim(ros::Time time, ros::Duration period)
+{
+  // read all resources
+  DefaultRobotHWSim::readSim(time, period);
+
+  // Read force-torque sensors
+  for (size_t i = 0; i < forceTorqueSensorDefinitions_.size(); ++i)
+  {
+    ForceTorqueSensorDefinitionPtr &ft = forceTorqueSensorDefinitions_[i];
+    gazebo::physics::JointWrench ft_wrench = ft->gazebo_joint->GetForceTorque(0u);
+
+    ft->force[0] = ft_wrench.body2Force.x;
+    ft->force[1] = ft_wrench.body2Force.y;
+    ft->force[2] = ft_wrench.body2Force.z;
+    ft->torque[0] = ft_wrench.body2Torque.x;
+    ft->torque[1] = ft_wrench.body2Torque.y;
+    ft->torque[2] = ft_wrench.body2Torque.z;
+
+    // Transform to sensor frame
+    Eigen::MatrixXd transform(6, 6);
+    transform.setZero();
+    transform.block(0, 0, 3, 3) = Eigen::Matrix3d::Identity();
+    transform.block(3, 3, 3, 3) = ft->sensorTransform.rotation().transpose();
+    eVector3 r = ft->sensorTransform.translation();
+    transform.block(3, 0, 3, 3) = skew(r) * ft->sensorTransform.rotation().transpose();
+
+    Eigen::VectorXd wrench(6);
+    wrench << ft->torque[0], ft->torque[1], ft->torque[2], ft->force[0], ft->force[1],
+        ft->force[2];
+    Eigen::VectorXd transformedWrench(6);
+
+    transformedWrench = transform * wrench;
+
+    ft->torque[0] = transformedWrench(0);
+    ft->torque[1] = transformedWrench(1);
+    ft->torque[2] = transformedWrench(2);
+    ft->force[0] = transformedWrench(3);
+    ft->force[1] = transformedWrench(4);
+    ft->force[2] = transformedWrench(5);
+  }
+
+  // Read IMU sensor
+  for (size_t i = 0; i < imuSensorDefinitions_.size(); ++i)
+  {
+    ImuSensorDefinitionPtr &imu = imuSensorDefinitions_[i];
+
+    gazebo::math::Quaternion imu_quat = imu->gazebo_imu_sensor->GetOrientation();
+    imu->orientation[0] = imu_quat.x;
+    imu->orientation[1] = imu_quat.y;
+    imu->orientation[2] = imu_quat.z;
+    imu->orientation[3] = imu_quat.w;
+
+    gazebo::math::Vector3 imu_ang_vel = imu->gazebo_imu_sensor->GetAngularVelocity();
+    imu->base_ang_vel[0] = imu_ang_vel.x;
+    imu->base_ang_vel[1] = imu_ang_vel.y;
+    imu->base_ang_vel[2] = imu_ang_vel.z;
+
+    gazebo::math::Vector3 imu_lin_acc = imu->gazebo_imu_sensor->GetLinearAcceleration();
+    imu->linear_acceleration[0] = imu_lin_acc.x;
+    imu->linear_acceleration[1] = imu_lin_acc.y;
+    imu->linear_acceleration[2] = imu_lin_acc.z;
+  }
+}
+
+void PalHardwareGazebo::writeSim(ros::Time time, ros::Duration period)
+{
+  DefaultRobotHWSim::writeSim(time, period);
+  PUBLISH_DEBUG_DATA_TOPIC;
+}
 }
 
 PLUGINLIB_EXPORT_CLASS(gazebo_ros_control::PalHardwareGazebo, gazebo_ros_control::RobotHWSim)
