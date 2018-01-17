@@ -2,6 +2,12 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* formating
+* Added gazebo7 suppot
+* Contributors: Hilario Tome, Hillario Tome
+
 0.0.8 (2016-10-21)
 ------------------
 * add control_toolboxes in find_package
