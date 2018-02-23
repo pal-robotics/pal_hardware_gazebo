@@ -41,6 +41,8 @@
 
 #include <pal_hardware_gazebo/pal_hardware_gazebo.h>
 
+#include <dynamic_introspection/dynamic_introspection.h>
+
 typedef Eigen::Vector3d eVector3;
 typedef Eigen::Isometry3d eMatrixHom;
 typedef Eigen::Matrix3d eMatrixRot;
@@ -414,7 +416,7 @@ void PalHardwareGazebo::writeSim(ros::Time time, ros::Duration period)
   {
     res->write(time, period, e_stop_active_);
   }
-  // PUBLISH_DEBUG_DATA_TOPIC;
+  PUBLISH_DEBUG_DATA_TOPIC;
 }
 }
 

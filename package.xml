@@ -20,6 +20,7 @@
   <depend>gazebo</depend>
   <depend>cmake_modules</depend>
   <depend>eigen</depend>
+  <depend>dynamic_introspection</depend>
   <depend>pal_hardware_interfaces</depend>
   
   <export>
