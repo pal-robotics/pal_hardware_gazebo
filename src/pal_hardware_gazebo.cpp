@@ -41,6 +41,8 @@
 
 #include <pal_hardware_gazebo/pal_hardware_gazebo.h>
 
+#include <dynamic_introspection/dynamic_introspection.h>
+
 typedef Eigen::Vector3d eVector3;
 typedef Eigen::Isometry3d eMatrixHom;
 typedef Eigen::Matrix3d eMatrixRot;
@@ -285,6 +287,7 @@ bool PalHardwareGazebo::parseIMUSensors(ros::NodeHandle& nh, gazebo::physics::Mo
     ImuSensorDefinitionPtr imu(new ImuSensorDefinition(sensor_name, sensor_frame_id));
     imu->gazebo_imu_sensor = imu_sensor;
     imuSensorDefinitions_.push_back(imu);
+    imu_sensor->SetWorldToReferencePose();
     ROS_INFO_STREAM("Parsed imu sensor: " << sensor_name << " in frame: " << sensor_frame_id);
   }
   return true;
@@ -414,7 +417,7 @@ void PalHardwareGazebo::writeSim(ros::Time time, ros::Duration period)
   {
     res->write(time, period, e_stop_active_);
   }
-  // PUBLISH_DEBUG_DATA_TOPIC;
+  PUBLISH_DEBUG_DATA_TOPIC;
 }
 }
 

@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   joint_limits_interface
   gazebo_ros_control
   pal_hardware_interfaces
+  dynamic_introspection
 )
 
 find_package(gazebo REQUIRED)
