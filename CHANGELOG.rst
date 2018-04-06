@@ -2,6 +2,15 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge branch 'dynamic_introspection' into 'erbium-devel'
+  added dynamic introspection
+  See merge request control/pal_hardware_gazebo!3
+* fixed imu world reference
+* added dynamic introspection
+* Contributors: Hilario Tome
+
 0.1.0 (2018-01-17)
 ------------------
 * formating
