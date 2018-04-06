@@ -2,8 +2,8 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2018-04-06)
+------------------
 * Merge branch 'dynamic_introspection' into 'erbium-devel'
   added dynamic introspection
   See merge request control/pal_hardware_gazebo!3
