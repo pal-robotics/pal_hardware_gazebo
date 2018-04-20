@@ -287,7 +287,7 @@ bool PalHardwareGazebo::parseIMUSensors(ros::NodeHandle& nh, gazebo::physics::Mo
     ImuSensorDefinitionPtr imu(new ImuSensorDefinition(sensor_name, sensor_frame_id));
     imu->gazebo_imu_sensor = imu_sensor;
     imuSensorDefinitions_.push_back(imu);
-    imu_sensor->SetWorldToReferencePose();
+    imu_sensor->SetWorldToReferenceOrientation(ignition::math::Quaterniond::Identity);
     ROS_INFO_STREAM("Parsed imu sensor: " << sensor_name << " in frame: " << sensor_frame_id);
   }
   return true;
