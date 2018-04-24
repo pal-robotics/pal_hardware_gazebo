@@ -288,10 +288,8 @@ bool PalHardwareGazebo::parseIMUSensors(ros::NodeHandle& nh, gazebo::physics::Mo
     imu->gazebo_imu_sensor = imu_sensor;
     imuSensorDefinitions_.push_back(imu);
 
-#if GAZEBO_MAJOR_VERSION >= 8
-#if GAZEBO_MINOR_VERSION >= 11
+#if GAZEBO_MAJOR_VERSION >= 8 || (GAZEBO_MAJOR_VERSION == 7 && GAZEBO_MAJOR_VERSION >= 11)
     imu_sensor->SetWorldToReferenceOrientation(ignition::math::Quaterniond::Identity);
-#endif
 #endif
     ROS_INFO_STREAM("Parsed imu sensor: " << sensor_name << " in frame: " << sensor_frame_id);
   }
