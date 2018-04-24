@@ -42,6 +42,7 @@
 #include <pal_hardware_gazebo/pal_hardware_gazebo.h>
 
 #include <dynamic_introspection/dynamic_introspection.h>
+#include <gazebo/gazebo_config.h>
 
 typedef Eigen::Vector3d eVector3;
 typedef Eigen::Isometry3d eMatrixHom;
@@ -194,8 +195,8 @@ bool PalHardwareGazebo::parseForceTorqueSensors(ros::NodeHandle& nh,
 
     if (!urdf_sensor_joint)
     {
-      ROS_ERROR_STREAM("Problem finding joint: "
-                       << ft->sensorJointName << " to attach FT sensor in robot model");
+      ROS_ERROR_STREAM("Problem finding joint: " << ft->sensorJointName
+                                                 << " to attach FT sensor in robot model");
       return false;
     }
 
@@ -243,8 +244,7 @@ bool PalHardwareGazebo::parseForceTorqueSensors(ros::NodeHandle& nh,
     if (!ft->gazebo_joint)
     {
       ROS_ERROR_STREAM("Could not find joint '"
-                       << ft->sensorJointName
-                       << "' to which a force-torque sensor is attached.");
+                       << ft->sensorJointName << "' to which a force-torque sensor is attached.");
       return false;
     }
 
@@ -287,7 +287,10 @@ bool PalHardwareGazebo::parseIMUSensors(ros::NodeHandle& nh, gazebo::physics::Mo
     ImuSensorDefinitionPtr imu(new ImuSensorDefinition(sensor_name, sensor_frame_id));
     imu->gazebo_imu_sensor = imu_sensor;
     imuSensorDefinitions_.push_back(imu);
+
+#if GAZEBO_MAJOR_VERSION >= 8 || (GAZEBO_MAJOR_VERSION == 7 && GAZEBO_MINOR_VERSION >= 11)
     imu_sensor->SetWorldToReferenceOrientation(ignition::math::Quaterniond::Identity);
+#endif
     ROS_INFO_STREAM("Parsed imu sensor: " << sensor_name << " in frame: " << sensor_frame_id);
   }
   return true;
