@@ -420,7 +420,7 @@ void PalHardwareGazebo::writeSim(ros::Time time, ros::Duration period)
   {
     res->write(time, period, e_stop_active_);
   }
-  PUBLISH_DEBUG_DATA_TOPIC;
+  PUBLISH_ASYNC_STATISTICS("/introspection_data")
 }
 }
 
