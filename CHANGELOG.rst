@@ -2,8 +2,8 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.2 (2018-10-25)
+------------------
 * Merge branch 'migrate-to-statistics' into 'erbium-devel'
   Migrate to statistics
   See merge request control/pal_hardware_gazebo!6
