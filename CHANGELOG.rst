@@ -2,6 +2,24 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge branch 'migrate-to-statistics' into 'erbium-devel'
+  Migrate to statistics
+  See merge request control/pal_hardware_gazebo!6
+* Migrate to statistics
+* Merge branch 'check_version' into 'erbium-devel'
+  added check gazebo version for compiling imu fix
+  See merge request control/pal_hardware_gazebo!5
+* fixe typo major -> minor
+* fixed major minor issue
+* added check gazebo version for compiling imu fix
+* Merge branch 'fix_gazebo_8' into 'erbium-devel'
+  fixed compilation issues
+  See merge request control/pal_hardware_gazebo!4
+* fixed compilation issues
+* Contributors: Hilario Tome, Victor Lopez
+
 0.1.1 (2018-04-06)
 ------------------
 * Merge branch 'dynamic_introspection' into 'erbium-devel'
