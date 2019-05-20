@@ -2,6 +2,14 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge branch 'license-refactor' into 'erbium-devel'
+  Update pal license
+  See merge request control/pal_hardware_gazebo!7
+* Update PAL licenses
+* Contributors: Victor Lopez
+
 0.1.2 (2018-10-25)
 ------------------
 * Merge branch 'migrate-to-statistics' into 'erbium-devel'
