@@ -2,8 +2,8 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.3 (2019-05-20)
+------------------
 * Merge branch 'license-refactor' into 'erbium-devel'
   Update pal license
   See merge request control/pal_hardware_gazebo!7
