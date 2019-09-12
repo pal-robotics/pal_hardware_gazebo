@@ -2,8 +2,8 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.0 (2019-09-12)
+------------------
 * Fixed shadowed variables
 * UUID error fix and Eigen version update
 * added gazebo 9 and melodic changes
