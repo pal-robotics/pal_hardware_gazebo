@@ -2,6 +2,13 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixed shadowed variables
+* UUID error fix and Eigen version update
+* added gazebo 9 and melodic changes
+* Contributors: Jordan Palacios, Sai Kishor Kothakota
+
 0.1.2 (2018-10-25)
 ------------------
 * Merge branch 'migrate-to-statistics' into 'erbium-devel'
