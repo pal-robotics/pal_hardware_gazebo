@@ -24,7 +24,9 @@ catkin_package(
     LIBRARIES ${PROJECT_NAME}
 )
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS} SYSTEM ${EIGEN_INCLUDE_DIRS})
+include_directories(include)
+include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS} ${EIGEN_INCLUDE_DIRS})
+
 link_directories(${GAZEBO_LIBRARY_DIRS})
 
 add_library(${PROJECT_NAME} src/pal_hardware_gazebo.cpp)
