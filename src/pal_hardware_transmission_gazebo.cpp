@@ -166,7 +166,8 @@ bool PalHardwareTransmissionGazebo::initSim(
   jnt_max_effort_.resize(n_dof_);
   for (size_t j = 0; j < n_dof_; ++j)
   {
-    if (urdf->getJoint(sim_joints_[j]->GetName())->limits)
+    if (urdf->getJoint(sim_joints_[j]->GetName()) &&
+        urdf->getJoint(sim_joints_[j]->GetName())->limits)
       jnt_max_effort_[j] = urdf->getJoint(sim_joints_[j]->GetName())->limits->effort;
     else
     {
