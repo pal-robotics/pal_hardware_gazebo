@@ -29,7 +29,7 @@ include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS} ${EIGEN
 
 link_directories(${GAZEBO_LIBRARY_DIRS})
 
-add_library(${PROJECT_NAME} src/pal_hardware_gazebo.cpp)
+add_library(${PROJECT_NAME} src/pal_hardware_gazebo.cpp src/pal_hardware_transmission_gazebo.cpp)
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} ${EIGEN_LIBRARIES})
 
 install(TARGETS ${PROJECT_NAME}
