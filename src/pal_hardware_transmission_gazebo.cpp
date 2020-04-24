@@ -77,7 +77,6 @@ bool PalHardwareTransmissionGazebo::initSim(
   act_eff_.clear();
   jnt_pos_cmd_.clear();
   joint_names_.clear();
-  jnt_curr_limit_cmd_.clear();
   transmissions_data_.clear();
   transmissions_data_.resize(transmissions.size());
 
@@ -134,7 +133,6 @@ bool PalHardwareTransmissionGazebo::initSim(
   act_vel_.resize(n_dof_);
   act_eff_.resize(n_dof_);
   jnt_pos_cmd_.resize(n_dof_);
-  jnt_curr_limit_cmd_.resize(n_dof_, 1.0);
 
   /// Retrieving max joint effort from urdf because values are not set in sim_joints_
   jnt_max_effort_.resize(n_dof_);
@@ -161,12 +159,9 @@ bool PalHardwareTransmissionGazebo::initSim(
 
     act_state_interface_.registerHandle(
         ActuatorStateHandle(joint_names_[i], &jnt_pos_[i], &jnt_vel_[i], &jnt_eff_[i]));
-    jnt_curr_limit_cmd_interface_.registerHandle(ActuatorHandle(
-        act_state_interface_.getHandle(joint_names_[i]), &jnt_curr_limit_cmd_[i]));
   }
   registerInterface(&jnt_state_interface_);
   registerInterface(&jnt_pos_cmd_interface_);
-  registerInterface(&jnt_curr_limit_cmd_interface_);
 
   // Define the actuator and joint data inside transmission data
   for (size_t i = 0; i < transmissions_data_.size(); i++)
@@ -297,7 +292,7 @@ void PalHardwareTransmissionGazebo::writeSim(ros::Time time, ros::Duration perio
     const double error = jnt_pos_cmd_[j] - jnt_pos_[j];
     const double effort = pids_[j].computeCommand(error, period);
 
-    const double max_effort = jnt_curr_limit_cmd_[j] * jnt_max_effort_[j];
+    const double max_effort = jnt_max_effort_[j];
     const double min_effort = -max_effort;
     double effort_modified = (effort - max_effort) > 1e-4 ? max_effort : effort;
     effort_modified = effort_modified - min_effort < -1e-4 ? min_effort : effort_modified;
