@@ -69,6 +69,7 @@ bool PalHardwareTransmissionGazebo::initSim(
 
   // Cleanup
   sim_joints_.clear();
+  jnt_types_.clear();
   jnt_pos_.clear();
   jnt_vel_.clear();
   jnt_eff_.clear();
@@ -133,6 +134,7 @@ bool PalHardwareTransmissionGazebo::initSim(
   act_vel_.resize(n_dof_);
   act_eff_.resize(n_dof_);
   jnt_pos_cmd_.resize(n_dof_);
+  jnt_types_.resize(n_dof_);
 
   /// Retrieving max joint effort from urdf because values are not set in sim_joints_
   jnt_max_effort_.resize(n_dof_);
@@ -146,6 +148,12 @@ bool PalHardwareTransmissionGazebo::initSim(
                       << " doesn't have effort limit, usuing default 10.0");
       jnt_max_effort_[j] = 10.0;
     }
+  }
+
+  /// Retrieving joint types from the URDF
+  for (size_t i = 0; i < n_dof_; i++)
+  {
+    jnt_types_[i] = sim_joints_[i]->GetType();
   }
 
   // Hardware interfaces: joints
@@ -261,7 +269,15 @@ void PalHardwareTransmissionGazebo::readSim(ros::Time time, ros::Duration period
   // Read joint state and fill in the data
   for (unsigned int j = 0; j < n_dof_; ++j)
   {
-    jnt_pos_[j] += angles::shortest_angular_distance(jnt_pos_[j], sim_joints_[j]->Position());
+    if (jnt_types_[j] == urdf::Joint::PRISMATIC)
+    {
+      jnt_pos_[j] = sim_joints_[j]->Position();
+    }
+    else
+    {
+      jnt_pos_[j] +=
+          angles::shortest_angular_distance(jnt_pos_[j], sim_joints_[j]->Position());
+    }
     jnt_vel_[j] = sim_joints_[j]->GetVelocity(0u);
     jnt_eff_[j] = sim_joints_[j]->GetForce(0u);
   }
@@ -288,7 +304,15 @@ void PalHardwareTransmissionGazebo::writeSim(ros::Time time, ros::Duration perio
   for (unsigned int j = 0; j < n_dof_; ++j)
   {
     // Assumes jnt_pos_ contains most recent value from the readSim iteration
-    const double error = jnt_pos_cmd_[j] - jnt_pos_[j];
+    double error;
+    switch (jnt_types_[j])
+    {
+      case urdf::Joint::REVOLUTE:
+        error = angles::shortest_angular_distance(jnt_pos_[j], jnt_pos_cmd_[j]);
+        break;
+      default:
+        error = jnt_pos_cmd_[j] - jnt_pos_[j];
+    }
     const double effort = pids_[j].computeCommand(error, period);
 
     const double max_effort = jnt_max_effort_[j];

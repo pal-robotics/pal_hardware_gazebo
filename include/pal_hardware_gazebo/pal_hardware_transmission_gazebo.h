@@ -57,6 +57,7 @@ private:
   // Raw data
   unsigned int n_dof_;
 
+  std::vector<unsigned int> jnt_types_;
   std::vector<double> jnt_pos_;
   std::vector<double> jnt_vel_;
   std::vector<double> jnt_eff_;
