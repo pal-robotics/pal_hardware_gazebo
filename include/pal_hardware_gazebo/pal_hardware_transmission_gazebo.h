@@ -53,6 +53,14 @@ public:
   void readSim(ros::Time time, ros::Duration period);
   void writeSim(ros::Time time, ros::Duration period);
 
+protected:
+  // Methods used to control a joint.
+  enum JointControlMethod
+  {
+    EFFORT,
+    POSITION_PID
+  };
+
 private:
   // Raw data
   unsigned int n_dof_;
@@ -67,7 +75,11 @@ private:
   std::vector<std::string> joint_names_;
 
   std::vector<double> jnt_pos_cmd_;
+  std::vector<double> jnt_eff_cmd_;
   std::vector<double> jnt_max_effort_;
+
+  // Control Method info
+  std::vector<JointControlMethod> jnt_ctrl_mthd_;
 
   // Simulation-specific
   std::vector<gazebo::physics::JointPtr> sim_joints_;
@@ -76,9 +88,11 @@ private:
   hardware_interface::JointStateInterface jnt_state_interface_;
   hardware_interface::PositionJointInterface jnt_pos_cmd_interface_;
   hardware_interface::ActuatorStateInterface act_state_interface_;
+  hardware_interface::EffortJointInterface jnt_eff_cmd_interface_;
 
   // Joint limits interface
   joint_limits_interface::PositionJointSoftLimitsInterface jnt_limits_interface_;
+  joint_limits_interface::EffortJointSoftLimitsInterface eff_limits_interface_;
 
   transmission_interface::RobotTransmissions robot_transmissions_;
   boost::scoped_ptr<transmission_interface::TransmissionInterfaceLoader> transmission_loader_;

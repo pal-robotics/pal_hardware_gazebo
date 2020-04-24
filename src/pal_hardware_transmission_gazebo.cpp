@@ -77,7 +77,9 @@ bool PalHardwareTransmissionGazebo::initSim(
   act_vel_.clear();
   act_eff_.clear();
   jnt_pos_cmd_.clear();
+  jnt_eff_cmd_.clear();
   joint_names_.clear();
+  jnt_ctrl_mthd_.clear();
   transmissions_data_.clear();
   transmissions_data_.resize(transmissions.size());
 
@@ -95,7 +97,8 @@ bool PalHardwareTransmissionGazebo::initSim(
       bool interface_status = false;
       for (const std::string &hw_inf : transmission.joints_[i].hardware_interfaces_)
       {
-        if (hw_inf == "hardware_interface/PositionJointInterface")
+        if ((hw_inf == "hardware_interface/PositionJointInterface") ||
+            (hw_inf == "hardware_interface/EffortJointInterface"))
         {
           interface_status = true;
           break;
@@ -103,10 +106,10 @@ bool PalHardwareTransmissionGazebo::initSim(
       }
       if (!interface_status)
       {
-        ROS_WARN_STREAM("The pal_hardware_transmission_gazebo plugin only supports hardware_interface of type PositionJointInterface!");
+        ROS_WARN_STREAM("The pal_hardware_transmission_gazebo plugin only supports hardware_interface of type PositionJointInterface and EffortJointInterface!");
         ROS_ERROR_STREAM("The joint : "
                          << transmission.joints_[i].name_
-                         << " has no hardware interface of type PositionJointInterface");
+                         << " has no hardware interface of type either PositionJointInterface or EffortJointInterface");
         return false;
       }
     }
@@ -121,6 +124,28 @@ bool PalHardwareTransmissionGazebo::initSim(
       sim_joints_.push_back(model->GetJoint(joint_info.name_));
       transmissions_data_[i].joint_names_.push_back(joint_info.name_);
       joint_names_.push_back(joint_info.name_);
+      std::string hw_int = joint_info.hardware_interfaces_[0];
+      if (hw_int == "hardware_interface/EffortJointInterface")
+      {
+        jnt_ctrl_mthd_.push_back(JointControlMethod::EFFORT);
+      }
+      else if (hw_int == "hardware_interface/PositionJointInterface")
+      {
+        jnt_ctrl_mthd_.push_back(JointControlMethod::POSITION_PID);
+      }
+      else
+      {
+        ROS_WARN_STREAM_NAMED(
+            "pal_hw_transmission_sim",
+            "Joint " << joint_info.name_ << " of transmission " << transmissions[i].name_
+                     << " specifies multiple hardware interfaces. "
+                     << "Currently the default robot hardware simulation interface considers only the first entry");
+        ROS_FATAL_STREAM_NAMED("pal_hw_transmission_sim",
+                               "No matching hardware interface found for '"
+                                   << hw_int << "' while loading interfaces for "
+                                   << joint_info.name_);
+        return false;
+      }
     }
   }
   n_dof_ = sim_joints_.size();
@@ -134,6 +159,7 @@ bool PalHardwareTransmissionGazebo::initSim(
   act_vel_.resize(n_dof_);
   act_eff_.resize(n_dof_);
   jnt_pos_cmd_.resize(n_dof_);
+  jnt_eff_cmd_.resize(n_dof_);
   jnt_types_.resize(n_dof_);
 
   /// Retrieving max joint effort from urdf because values are not set in sim_joints_
@@ -161,8 +187,16 @@ bool PalHardwareTransmissionGazebo::initSim(
   {
     jnt_state_interface_.registerHandle(
         JointStateHandle(joint_names_[i], &jnt_pos_[i], &jnt_vel_[i], &jnt_eff_[i]));
-    jnt_pos_cmd_interface_.registerHandle(
-        JointHandle(jnt_state_interface_.getHandle(joint_names_[i]), &jnt_pos_cmd_[i]));
+    if (jnt_ctrl_mthd_[i] == JointControlMethod::POSITION_PID)
+    {
+      jnt_pos_cmd_interface_.registerHandle(
+          JointHandle(jnt_state_interface_.getHandle(joint_names_[i]), &jnt_pos_cmd_[i]));
+    }
+    else if (jnt_ctrl_mthd_[i] == JointControlMethod::EFFORT)
+    {
+      jnt_eff_cmd_interface_.registerHandle(
+          JointHandle(jnt_state_interface_.getHandle(joint_names_[i]), &jnt_eff_cmd_[i]));
+    }
     ROS_DEBUG_STREAM("Registered joint '" << joint_names_[i] << "' in the PositionJointInterface.");
 
     act_state_interface_.registerHandle(
@@ -170,6 +204,7 @@ bool PalHardwareTransmissionGazebo::initSim(
   }
   registerInterface(&jnt_state_interface_);
   registerInterface(&jnt_pos_cmd_interface_);
+  registerInterface(&jnt_eff_cmd_interface_);
 
   // Define the actuator and joint data inside transmission data
   for (size_t i = 0; i < transmissions_data_.size(); i++)
@@ -189,6 +224,7 @@ bool PalHardwareTransmissionGazebo::initSim(
       transmissions_data_[i].actuator_data_.velocity.push_back(&act_vel_[k]);
       transmissions_data_[i].actuator_data_.position.push_back(&act_pos_[k]);
       transmissions_data_[i].joint_cmd_data_.position.push_back(&jnt_pos_cmd_[k]);
+      transmissions_data_[i].joint_cmd_data_.effort.push_back(&jnt_eff_cmd_[k]);
     }
   }
 
@@ -223,32 +259,40 @@ bool PalHardwareTransmissionGazebo::initSim(
   }
 
   // Joint limits interface
-  std::vector<std::string> cmd_handle_names = jnt_pos_cmd_interface_.getNames();
-  for (unsigned int i = 0; i < cmd_handle_names.size(); ++i)
+  for (size_t i = 0; i < n_dof_; i++)
   {
-    JointHandle cmd_handle = jnt_pos_cmd_interface_.getHandle(cmd_handle_names[i]);
-    const std::string name = cmd_handle.getName();
-
+    JointHandle cmd_handle;
     using namespace joint_limits_interface;
-    std::shared_ptr<const urdf::Joint> urdf_joint = urdf->getJoint(name);
+    std::shared_ptr<const urdf::Joint> urdf_joint = urdf->getJoint(joint_names_[i]);
     JointLimits limits;
     SoftJointLimits soft_limits;
     if (!joint_limits_interface::getJointLimits(urdf_joint, limits) ||
         !joint_limits_interface::getSoftJointLimits(urdf_joint, soft_limits))
     {
-      ROS_WARN_STREAM("Joint limits won't be enforced for joint '" << name << "'.");
+      ROS_WARN_STREAM("Joint limits won't be enforced for joint '" << joint_names_[i] << "'.");
       continue;
     }
-    jnt_limits_interface_.registerHandle(
-        PositionJointSoftLimitsHandle(cmd_handle, limits, soft_limits));
-
-    ROS_DEBUG_STREAM("Joint limits will be enforced for joint '" << name << "'.");
+    if (jnt_ctrl_mthd_[i] == JointControlMethod::POSITION_PID)
+    {
+      cmd_handle = jnt_pos_cmd_interface_.getHandle(joint_names_[i]);
+      jnt_limits_interface_.registerHandle(
+          PositionJointSoftLimitsHandle(cmd_handle, limits, soft_limits));
+    }
+    else if (jnt_ctrl_mthd_[i] == JointControlMethod::EFFORT)
+    {
+      cmd_handle = jnt_eff_cmd_interface_.getHandle(joint_names_[i]);
+      eff_limits_interface_.registerHandle(
+          EffortJointSoftLimitsHandle(cmd_handle, limits, soft_limits));
+    }
+    ROS_DEBUG_STREAM("Joint limits will be enforced for joint '" << joint_names_[i] << "'.");
   }
 
   // PID controllers
   pids_.resize(n_dof_);
   for (size_t i = 0; i < n_dof_; ++i)
   {
+    if (jnt_ctrl_mthd_[i] == JointControlMethod::EFFORT)
+      continue;
     ros::NodeHandle joint_nh(nh, "gains/" + joint_names_[i]);
     if (!pids_[i].init(joint_nh))
     {
@@ -287,6 +331,7 @@ void PalHardwareTransmissionGazebo::writeSim(ros::Time time, ros::Duration perio
 {
   // Enforce joint limits based on URDF
   jnt_limits_interface_.enforceLimits(period);
+  eff_limits_interface_.enforceLimits(period);
 
   // Compute the final joint command input
   // The below iteration make sures that the position in the custom transmissions are
@@ -298,29 +343,44 @@ void PalHardwareTransmissionGazebo::writeSim(ros::Time time, ros::Duration perio
 
     transmission_classes_[i]->actuatorToJointPosition(
         transmissions_data_[i].actuator_data_, transmissions_data_[i].joint_cmd_data_);
+
+    transmission_classes_[i]->jointToActuatorEffort(transmissions_data_[i].joint_cmd_data_,
+                                                    transmissions_data_[i].actuator_data_);
+
+    transmission_classes_[i]->actuatorToJointEffort(transmissions_data_[i].actuator_data_,
+                                                    transmissions_data_[i].joint_cmd_data_);
   }
 
   // Compute and send effort command
   for (unsigned int j = 0; j < n_dof_; ++j)
   {
-    // Assumes jnt_pos_ contains most recent value from the readSim iteration
-    double error;
-    switch (jnt_types_[j])
+    switch (jnt_ctrl_mthd_[j])
     {
-      case urdf::Joint::REVOLUTE:
-        error = angles::shortest_angular_distance(jnt_pos_[j], jnt_pos_cmd_[j]);
+      case JointControlMethod::EFFORT:
+        sim_joints_[j]->SetForce(0, jnt_eff_cmd_[j]);
         break;
-      default:
-        error = jnt_pos_cmd_[j] - jnt_pos_[j];
+      case JointControlMethod::POSITION_PID:
+      {
+        // Assumes jnt_pos_ contains most recent value from the readSim iteration
+        double error;
+        switch (jnt_types_[j])
+        {
+          case urdf::Joint::REVOLUTE:
+            error = angles::shortest_angular_distance(jnt_pos_[j], jnt_pos_cmd_[j]);
+            break;
+          default:
+            error = jnt_pos_cmd_[j] - jnt_pos_[j];
+        }
+        const double effort = pids_[j].computeCommand(error, period);
+
+        const double max_effort = jnt_max_effort_[j];
+        const double min_effort = -max_effort;
+        double effort_modified = (effort - max_effort) > 1e-4 ? max_effort : effort;
+        effort_modified = effort_modified - min_effort < -1e-4 ? min_effort : effort_modified;
+
+        sim_joints_[j]->SetForce(0u, effort_modified);
+      }
     }
-    const double effort = pids_[j].computeCommand(error, period);
-
-    const double max_effort = jnt_max_effort_[j];
-    const double min_effort = -max_effort;
-    double effort_modified = (effort - max_effort) > 1e-4 ? max_effort : effort;
-    effort_modified = effort_modified - min_effort < -1e-4 ? min_effort : effort_modified;
-
-    sim_joints_[j]->SetForce(0u, effort_modified);
   }
 }
 
