@@ -192,7 +192,6 @@ bool PalHardwareTransmissionGazebo::initSim(
     {
       transmission_class_loader_.reset(new TransmissionClassLoader(
           "transmission_interface", "transmission_interface::TransmissionLoader"));
-      typedef boost::shared_ptr<transmission_interface::TransmissionLoader> TransmissionLoaderPtr;
       TransmissionLoaderPtr transmission_loader =
           transmission_class_loader_->createInstance(transmissions[i].type_);
       transmission_classes_[i] = transmission_loader->load(transmissions[i]);
