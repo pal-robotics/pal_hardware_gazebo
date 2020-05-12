@@ -151,11 +151,18 @@ bool PalHardwareTransmissionGazebo::initSim(
   n_dof_ = sim_joints_.size();
   ROS_DEBUG_STREAM("Successfully retreived joint names!");
 
+  // Get actuators count
+  int actuators_count = 0;
+  for (size_t i = 0; i < transmissions.size(); i++)
+  {
+    actuators_count += transmissions[i].actuators_.size();
+  }
+
   // Raw data
   jnt_pos_.resize(n_dof_);
   jnt_vel_.resize(n_dof_);
   jnt_eff_.resize(n_dof_);
-  act_pos_.resize(n_dof_);
+  act_pos_.resize(actuators_count);
   act_vel_.resize(n_dof_);
   act_eff_.resize(n_dof_);
   jnt_pos_cmd_.resize(n_dof_);
@@ -221,11 +228,17 @@ bool PalHardwareTransmissionGazebo::initSim(
       transmissions_data_[i].joint_data_.effort.push_back(&jnt_eff_[k]);
       transmissions_data_[i].joint_data_.velocity.push_back(&jnt_vel_[k]);
       transmissions_data_[i].joint_data_.position.push_back(&jnt_pos_[k]);
-      transmissions_data_[i].actuator_data_.effort.push_back(&act_eff_[k]);
-      transmissions_data_[i].actuator_data_.velocity.push_back(&act_vel_[k]);
-      transmissions_data_[i].actuator_data_.position.push_back(&act_pos_[k]);
       transmissions_data_[i].joint_cmd_data_.position.push_back(&jnt_pos_cmd_[k]);
       transmissions_data_[i].joint_cmd_data_.effort.push_back(&jnt_eff_cmd_[k]);
+    }
+  }
+  for (size_t i = 0; i < transmissions.size(); i++)
+  {
+    for (size_t k = 0; k < transmissions[i].actuators_.size(); k++)
+    {
+      transmissions_data_[i].actuator_data_.effort.push_back(&act_eff_[k+i]);
+      transmissions_data_[i].actuator_data_.velocity.push_back(&act_vel_[k+i]);
+      transmissions_data_[i].actuator_data_.position.push_back(&act_pos_[k+i]);
     }
   }
 
