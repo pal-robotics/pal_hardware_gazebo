@@ -288,10 +288,13 @@ bool PalHardwareTransmissionGazebo::initSim(
     std::shared_ptr<const urdf::Joint> urdf_joint = urdf->getJoint(joint_names_[i]);
     JointLimits limits;
     SoftJointLimits soft_limits;
-    if (!joint_limits_interface::getJointLimits(urdf_joint, limits) &&
-        !joint_limits_interface::getSoftJointLimits(urdf_joint, soft_limits))
+    joint_limits_interface::getJointLimits(urdf_joint, limits);
+    const bool soft_limits_status =
+        joint_limits_interface::getSoftJointLimits(urdf_joint, soft_limits);
+    if (!soft_limits_status)
     {
-      ROS_WARN_STREAM("Joint limits won't be enforced for joint '" << joint_names_[i] << "'.");
+      ROS_WARN_STREAM("Joint limits won't be enforced for joint '"
+                      << joint_names_[i] << "' as the soft limits are not found in the URDF!.");
       continue;
     }
     if (jnt_ctrl_mthd_[i] == JointControlMethod::POSITION_PID)
@@ -360,7 +363,6 @@ void PalHardwareTransmissionGazebo::writeSim(ros::Time time, ros::Duration perio
   // limited as per the defined boundaries
   for (size_t i = 0; i < transmissions_data_.size(); i++)
   {
-      ROS_ERROR_STREAM_THROTTLE(1.0, *transmissions_data_[i].joint_cmd_data_.position[0]);
     transmission_classes_[i]->jointToActuatorPosition(
         transmissions_data_[i].joint_cmd_data_, transmissions_data_[i].actuator_data_);
 
