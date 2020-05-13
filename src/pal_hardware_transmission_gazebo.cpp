@@ -121,7 +121,15 @@ bool PalHardwareTransmissionGazebo::initSim(
     transmissions_data_[i].joint_names_.clear();
     for (const transmission_interface::JointInfo &joint_info : transmissions[i].joints_)
     {
-      sim_joints_.push_back(model->GetJoint(joint_info.name_));
+      gazebo::physics::JointPtr joint = model->GetJoint(joint_info.name_);
+      if (!joint)
+      {
+        ROS_ERROR_STREAM_NAMED("pal_hw_transmission_sim",
+                               "This robot has a joint named \""
+                                   << joint_info.name_ << "\" which is not in the gazebo model.");
+        return false;
+      }
+      sim_joints_.push_back(joint);
       transmissions_data_[i].joint_names_.push_back(joint_info.name_);
       joint_names_.push_back(joint_info.name_);
       std::string hw_int = joint_info.hardware_interfaces_[0];
@@ -163,8 +171,8 @@ bool PalHardwareTransmissionGazebo::initSim(
   jnt_vel_.resize(n_dof_);
   jnt_eff_.resize(n_dof_);
   act_pos_.resize(actuators_count);
-  act_vel_.resize(n_dof_);
-  act_eff_.resize(n_dof_);
+  act_vel_.resize(actuators_count);
+  act_eff_.resize(actuators_count);
   jnt_pos_cmd_.resize(n_dof_);
   jnt_eff_cmd_.resize(n_dof_);
   jnt_types_.resize(n_dof_);
@@ -280,7 +288,7 @@ bool PalHardwareTransmissionGazebo::initSim(
     std::shared_ptr<const urdf::Joint> urdf_joint = urdf->getJoint(joint_names_[i]);
     JointLimits limits;
     SoftJointLimits soft_limits;
-    if (!joint_limits_interface::getJointLimits(urdf_joint, limits) ||
+    if (!joint_limits_interface::getJointLimits(urdf_joint, limits) &&
         !joint_limits_interface::getSoftJointLimits(urdf_joint, soft_limits))
     {
       ROS_WARN_STREAM("Joint limits won't be enforced for joint '" << joint_names_[i] << "'.");
@@ -352,6 +360,7 @@ void PalHardwareTransmissionGazebo::writeSim(ros::Time time, ros::Duration perio
   // limited as per the defined boundaries
   for (size_t i = 0; i < transmissions_data_.size(); i++)
   {
+      ROS_ERROR_STREAM_THROTTLE(1.0, *transmissions_data_[i].joint_cmd_data_.position[0]);
     transmission_classes_[i]->jointToActuatorPosition(
         transmissions_data_[i].joint_cmd_data_, transmissions_data_[i].actuator_data_);
 
