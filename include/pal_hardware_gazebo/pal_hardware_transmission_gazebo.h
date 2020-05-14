@@ -91,6 +91,8 @@ private:
   hardware_interface::EffortJointInterface jnt_eff_cmd_interface_;
 
   // Joint limits interface
+  joint_limits_interface::PositionJointSaturationInterface jnt_sat_interface_;
+  joint_limits_interface::EffortJointSaturationInterface eff_sat_interface_;
   joint_limits_interface::PositionJointSoftLimitsInterface jnt_limits_interface_;
   joint_limits_interface::EffortJointSoftLimitsInterface eff_limits_interface_;
 

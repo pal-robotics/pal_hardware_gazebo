@@ -244,9 +244,9 @@ bool PalHardwareTransmissionGazebo::initSim(
   {
     for (size_t k = 0; k < transmissions[i].actuators_.size(); k++)
     {
-      transmissions_data_[i].actuator_data_.effort.push_back(&act_eff_[k+i]);
-      transmissions_data_[i].actuator_data_.velocity.push_back(&act_vel_[k+i]);
-      transmissions_data_[i].actuator_data_.position.push_back(&act_pos_[k+i]);
+      transmissions_data_[i].actuator_data_.effort.push_back(&act_eff_[k + i]);
+      transmissions_data_[i].actuator_data_.velocity.push_back(&act_vel_[k + i]);
+      transmissions_data_[i].actuator_data_.position.push_back(&act_pos_[k + i]);
     }
   }
 
@@ -288,26 +288,40 @@ bool PalHardwareTransmissionGazebo::initSim(
     std::shared_ptr<const urdf::Joint> urdf_joint = urdf->getJoint(joint_names_[i]);
     JointLimits limits;
     SoftJointLimits soft_limits;
-    joint_limits_interface::getJointLimits(urdf_joint, limits);
+    const bool hard_limits_status = joint_limits_interface::getJointLimits(urdf_joint, limits);
     const bool soft_limits_status =
         joint_limits_interface::getSoftJointLimits(urdf_joint, soft_limits);
-    if (!soft_limits_status)
+    if (!soft_limits_status && !hard_limits_status)
     {
-      ROS_WARN_STREAM("Joint limits won't be enforced for joint '"
-                      << joint_names_[i] << "' as the soft limits are not found in the URDF!.");
+      ROS_WARN_STREAM("Joint limits are not found for joint '"
+                      << joint_names_[i] << "' so not enforcing any limits!.");
       continue;
     }
     if (jnt_ctrl_mthd_[i] == JointControlMethod::POSITION_PID)
     {
       cmd_handle = jnt_pos_cmd_interface_.getHandle(joint_names_[i]);
-      jnt_limits_interface_.registerHandle(
-          PositionJointSoftLimitsHandle(cmd_handle, limits, soft_limits));
+      if (soft_limits_status)
+      {
+        jnt_limits_interface_.registerHandle(
+            PositionJointSoftLimitsHandle(cmd_handle, limits, soft_limits));
+      }
+      else
+      {
+        jnt_sat_interface_.registerHandle(PositionJointSaturationHandle(cmd_handle, limits));
+      }
     }
     else if (jnt_ctrl_mthd_[i] == JointControlMethod::EFFORT)
     {
       cmd_handle = jnt_eff_cmd_interface_.getHandle(joint_names_[i]);
-      eff_limits_interface_.registerHandle(
-          EffortJointSoftLimitsHandle(cmd_handle, limits, soft_limits));
+      if (soft_limits_status)
+      {
+        eff_limits_interface_.registerHandle(
+            EffortJointSoftLimitsHandle(cmd_handle, limits, soft_limits));
+      }
+      else
+      {
+        eff_sat_interface_.registerHandle(EffortJointSaturationHandle(cmd_handle, limits));
+      }
     }
     ROS_DEBUG_STREAM("Joint limits will be enforced for joint '" << joint_names_[i] << "'.");
   }
@@ -355,7 +369,9 @@ void PalHardwareTransmissionGazebo::readSim(ros::Time time, ros::Duration period
 void PalHardwareTransmissionGazebo::writeSim(ros::Time time, ros::Duration period)
 {
   // Enforce joint limits based on URDF
+  jnt_sat_interface_.enforceLimits(period);
   jnt_limits_interface_.enforceLimits(period);
+  eff_sat_interface_.enforceLimits(period);
   eff_limits_interface_.enforceLimits(period);
 
   // Compute the final joint command input
