@@ -207,13 +207,14 @@ bool PalHardwareTransmissionGazebo::initSim(
     {
       jnt_pos_cmd_interface_.registerHandle(
           JointHandle(jnt_state_interface_.getHandle(joint_names_[i]), &jnt_pos_cmd_[i]));
+      ROS_DEBUG_STREAM("Registered joint '" << joint_names_[i] << "' in the PositionJointInterface.");
     }
     else if (jnt_ctrl_mthd_[i] == JointControlMethod::EFFORT)
     {
       jnt_eff_cmd_interface_.registerHandle(
           JointHandle(jnt_state_interface_.getHandle(joint_names_[i]), &jnt_eff_cmd_[i]));
+      ROS_DEBUG_STREAM("Registered joint '" << joint_names_[i] << "' in the EffortJointInterface.");
     }
-    ROS_DEBUG_STREAM("Registered joint '" << joint_names_[i] << "' in the PositionJointInterface.");
 
     act_state_interface_.registerHandle(
         ActuatorStateHandle(joint_names_[i], &jnt_pos_[i], &jnt_vel_[i], &jnt_eff_[i]));
