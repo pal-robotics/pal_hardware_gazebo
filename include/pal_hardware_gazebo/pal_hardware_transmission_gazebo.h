@@ -53,6 +53,9 @@ public:
   void readSim(ros::Time time, ros::Duration period);
   void writeSim(ros::Time time, ros::Duration period);
 
+  bool prepareSwitch(const std::list<hardware_interface::ControllerInfo>& start_list,
+                     const std::list<hardware_interface::ControllerInfo>& stop_list) override final;
+
 protected:
   // Methods used to control a joint.
   enum JointControlMethod
@@ -79,7 +82,8 @@ private:
   std::vector<double> jnt_max_effort_;
 
   // Control Method info
-  std::vector<JointControlMethod> jnt_ctrl_mthd_;
+  std::vector<std::vector<JointControlMethod>> jnt_ctrl_mthd_;
+  std::vector<std::string> current_jnt_ctrl_mthd_;
 
   // Simulation-specific
   std::vector<gazebo::physics::JointPtr> sim_joints_;
