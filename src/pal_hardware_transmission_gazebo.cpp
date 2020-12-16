@@ -454,13 +454,15 @@ void PalHardwareTransmissionGazebo::writeSim(ros::Time time, ros::Duration perio
                                                     transmissions_data_[i].joint_cmd_data_);
   }
 
+  if(current_jnt_ctrl_mthd_.size() < 1)
+      return;
+
   // Compute and send effort command
   for (unsigned int j = 0; j < n_dof_; ++j)
   {
     if (current_jnt_ctrl_mthd_[j] == "hardware_interface::EffortJointInterface")
     {
-      std::cerr << joint_names_[j] << " effort " << jnt_eff_cmd_[j] << std::endl;
-      sim_joints_[j]->SetForce(0, jnt_eff_cmd_[j]);
+        sim_joints_[j]->SetForce(0, jnt_eff_cmd_[j]);
     }
     else if (current_jnt_ctrl_mthd_[j] == "hardware_interface::PositionJointInterface")
     {
@@ -481,7 +483,6 @@ void PalHardwareTransmissionGazebo::writeSim(ros::Time time, ros::Duration perio
       double effort_modified = (effort - max_effort) > 1e-4 ? max_effort : effort;
       effort_modified = effort_modified - min_effort < -1e-4 ? min_effort : effort_modified;
 
-      std::cerr << joint_names_[j] << " position " << effort_modified << std::endl;
       sim_joints_[j]->SetForce(0u, effort_modified);
     }
     else
@@ -502,9 +503,6 @@ void PalHardwareTransmissionGazebo::writeSim(ros::Time time, ros::Duration perio
       const double min_effort = -max_effort;
       double effort_modified = (effort - max_effort) > 1e-4 ? max_effort : effort;
       effort_modified = effort_modified - min_effort < -1e-4 ? min_effort : effort_modified;
-
-      std::cerr << joint_names_[j] << " effort " << jnt_eff_cmd_[j] << std::endl;
-      std::cerr << joint_names_[j] << " position " << effort_modified << std::endl;
       sim_joints_[j]->SetForce(0u, effort_modified);
     }
   }
