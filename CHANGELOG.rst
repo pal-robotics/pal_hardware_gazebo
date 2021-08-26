@@ -2,8 +2,8 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.1 (2021-08-26)
+------------------
 * Merge branch 'kangaroo_wbc' into 'ferrum-devel'
   Kangaroo wbc
   See merge request control/pal_hardware_gazebo!11
