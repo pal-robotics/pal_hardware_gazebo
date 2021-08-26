@@ -18,8 +18,6 @@
 
 #include <pal_hardware_gazebo/pal_hardware_transmission_gazebo.h>
 
-#include <pal_utils/exception_utils.h>
-
 namespace gazebo_ros_control
 {
 int getJointIndex(const std::vector<std::string> &joint_names, const std::string &joint_name)
