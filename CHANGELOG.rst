@@ -2,6 +2,28 @@
 Changelog for package pal_hardware_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge branch 'kangaroo_wbc' into 'ferrum-devel'
+  Kangaroo wbc
+  See merge request control/pal_hardware_gazebo!11
+* remove unused pal_utils header
+* Fix race condition when no controller is loaded yet
+* Allow interface in effort and or in position
+* better debug prints
+* added saturation interface to enforce hard limit
+* fixed the issue with joint handle for no softlimits
+* added other potential fixes
+* fixed the bug with the number of transmission actuators
+* fixed the potential null pointer dereferencing
+* added support for EffortJointInterface in the new transmission hw simulation
+* added support for the Prismatic joints
+* removed a shadowing typedef declaration
+* remove curr_limit_cmd interface
+* Added pal_hardware_gazebo/PalHardwareTransmissionGazebo plugin for custom robot sim interface
+* Add README
+* Contributors: Adria Roig, Sai Kishor Kothakota, Victor Lopez, victor
+
 1.0.0 (2019-09-12)
 ------------------
 * Fixed shadowed variables
